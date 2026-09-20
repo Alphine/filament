@@ -69,14 +69,15 @@ their numbers are unchanged.
 
 ## Compliance notes
 * **Data and labels.** Training used only the competition's own images and annotations. No
-  MAGFiLO annotations outside those provided by the competition, no test-set labels, and no
-  hand-labelled or leaked test data were used. Inference uses only the H-alpha test images.
+  annotations outside those provided by the competition and no test-set labels were used. MAGFiLO is
+  also released publicly; we did not download or consult that release (the organizers allow only the
+  competition's annotations as ground truth). Inference uses only the H-alpha test images.
 * **External assets.** Only ImageNet-pretrained ResNet34 encoders (via `torchvision` and
   `segmentation_models_pytorch`) initialise the networks. No third-party competition model is part of
   the released pipeline. (A separate ensemble with a public third-party Mask R-CNN was evaluated as an
   ablation; it gave +0.0028 hold-out PQ, statistically indistinguishable from zero, and is excluded
   because its training provenance cannot be verified here.)
-* **Leaderboard.** No attempt was made to exploit scoring behaviour of the public leaderboard.
+* **Leaderboard.** No attempt was made to exploit scoring behaviour of the public leaderboard or any public annotations. To understand the leaderboard we decoded one public notebook that embeds a pre-computed submission and computed descriptive statistics only; it was never used for training, tuning, selection or evaluation. See sections 7-8 of the report.
 * **AI assistance.** The code, analyses and this documentation were developed with an AI coding
   assistant (Claude Code) under the author's direction.
 
