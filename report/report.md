@@ -3,10 +3,10 @@
 *Technical report draft for the Solar Filament Segmentation Challenge 2026 (IEEE BigData Cup). Target: 4 pages in the organizers' Overleaf template; this file is the content, to be typeset there.*
 
 ## Abstract
-We segment solar filaments in H-alpha images with a two-stage pipeline: a five-fold ResNet34 U-Net ensemble with dihedral test-time augmentation proposes candidate instances, and a crop-level refiner redraws each candidate from a box-shaped seed. On a 50-image hold-out never used for training or model selection the pipeline reaches PQ 0.4325 (bootstrap SE 0.017) and 0.36 on the public leaderboard. Two analyses shape our interpretation. First, two annotators disagree with each other at PQ 0.34 and mean matched IoU 0.63, so a large share of the remaining error is annotation ambiguity rather than model error. Second, most post-processing and loss ideas we tried (watershed, shape filters, topology losses, TTA gating, ensembling with a public model) did not help at the resolution our hold-out can measure.
+We segment solar filaments in H-alpha images with a two-stage pipeline: a five-fold ResNet34 U-Net ensemble with dihedral test-time augmentation proposes candidate instances, and a crop-level refiner redraws each candidate from a box-shaped seed. On a 50-image hold-out never used for training or model selection the pipeline reaches PQ 0.4325 (bootstrap SE 0.017) and 0.36 on the public leaderboard. Two analyses shape our interpretation. First, two annotators disagree with each other at PQ 0.34 and mean matched IoU 0.63, so a large share of the remaining error is annotation ambiguity rather than model error. Second, most post-processing and loss ideas we tried (watershed, shape filters, topology losses, TTA gating, ensembling with a public model) did not help at the resolution our hold-out can measure. Candidate experiments that would need new GPU training (a full clDice loss, a vesselness input channel, a second ensemble member, self-supervised pretraining on public H-alpha images) were audited analytically and not run, because their expected gains (about +-0.005 or less) are below what a 50-image hold-out can resolve. We also document that the public leaderboard's upper range is not consistent with legitimate modelling, and how we complied with the competition's data rules.
 
 ## 1. Data and evaluation protocol
-**Data.** 707 annotated training images (2048x2048, MAGFiLO [9]) and 180 test images. 296 training images have two or more annotator passes (145 with two, 151 with three); 411 have one.
+**Data.** 707 annotated training images (2048x2048, MAGFiLO [9]) and 180 test images. The full MAGFiLO collection has 10,244 annotated filaments from 1,593 GONG observations and 41 contributing annotators [9]. 296 training images have two or more annotator passes (145 with two, 151 with three); 411 have one.
 
 **Metric.** PQ [1] = sum(IoU of TP pairs) / (|TP| + 0.5|FP| + 0.5|FN|), TP if IoU > 0.5, evaluated against each annotator pass separately and pooled (`filament_metric.py`; verified equal to our earlier implementation on randomized data, identical TP/FP/FN counts).
 
@@ -43,6 +43,22 @@ All measured against the same hold-out, official PQ unless noted.
 | Second ResNet34 ensemble / R34+R50 mix | about +-0.002 | TTA absorbs the diversity gain |
 | Predict "supported by >= 2 annotator passes" from candidate features and drop unsupported candidates (post-hoc filter) | +0.0024 out-of-sample (best of 7 thresholds in-sample +0.0057, paired CI includes 0) | AUC 0.77 (CI95 0.65-0.88) on 147 candidates from 19 multi-pass hold-out images versus 0.72 for the mean probability alone; even an oracle that knows the labels gains only +0.0132 over all 50 images |
 
+**Ideas evaluated analytically and not run.** Because the hold-out cannot resolve differences below about 0.005 and GPU time
+is limited, four candidate experiments were audited before any compute was spent. The estimates below are our own
+judgements from the evidence available, not measurements.
+* *Full clDice loss for the refiner* (precision and recall of soft skeletons). The closely related skeleton-recall loss was
+  neutral to negative (-0.0037), the loss adds no signal against false positives (the largest loss), and the literature
+  we found reports topology metrics for it, not instance-level PQ. Estimated effect -0.004 to +0.003.
+* *Sato vesselness as an input channel* (precomputed for all images). We have no measurement that it separates filaments from
+  other dark structures such as sunspots, the refiner already uses all three pretrained input channels, and it does not
+  address false positives. Estimated effect -0.005 to +0.008.
+* *A second, differently trained U-Net ensemble.* A second ensemble and an R34+R50 mix were already within +-0.002 once TTA is
+  applied. Estimated effect 0 to +0.002.
+* *Self-supervised pretraining on public unlabelled GONG H-alpha images.* The organizers explicitly permit it (forum topics
+  737215, 738951), but we found no published evidence that it beats ImageNet initialisation for H-alpha filaments, the
+  public solar foundation models we found were pretrained on SDO images rather than H-alpha, and the compute (roughly 3-6
+  GPU-hours plus fine-tuning) exceeds our budget. We judge the chance of a gain of 0.01 or more to be below 20%.
+
 ## 5. Where the remaining error comes from
 **Error decomposition** (final pipeline on the hold-out, TP/FP/FN = 400/239/211): 54% of the 450 errors are near-misses, i.e. a prediction and a ground-truth filament overlap but with IoU <= 0.5 (132 of 239 FP, 110 of 211 FN); the rest have no overlap at all. The mean IoU of true positives is 0.676.
 
@@ -51,7 +67,7 @@ All measured against the same hold-out, official PQ unless noted.
 **Training target.** A leave-one-pass-out simulation on 151 three-pass images builds predictions from two passes and scores them against the third. Predicting only objects that both passes marked, with the union shape, beats the pixel-union target (the one stage-A is trained on) by +0.0145 (paired bootstrap 95% CI +0.006 to +0.023); intersection shapes lose. Objects marked by one annotator only match a third pass about 22% of the time, below the break-even fraction of roughly 0.32 that follows from the PQ formula. This is a simulation of the target, not a trained model; because the tuned thresholds already suppress low-confidence objects, we expect most of this effect to be captured already and did not retrain.
 
 ## 6. Discussion and limitations
-* Hold-out resolution (SE 0.017) means several of our null results are inconclusive rather than negative.
+* Hold-out resolution (SE 0.017) means several of our null results are inconclusive rather than negative. The "noise floor" of 0.0016 that our earlier experiments used as a submission gate came from a single quantisation difference (uint8 versus float32 probability maps) and is roughly ten times smaller than the sampling error, so decisions made with it are provisional; reducing the error would need out-of-fold predictions over the 657 training images (standard error about 0.004) or repeated seeds.
 * **Hold-out versus leaderboard.** The leaderboard score (0.36) is below the hold-out PQ (0.4325). We do not have the test labels and did not identify the cause, so the following are hypotheses only: (i) the hold-out is a random subset of the training images and the test images may be distributed differently (for example by observation date); (ii) if the test ground truth comes from fewer annotator passes per image than our multi-pass average, the attainable PQ is lower, since two annotators agree with each other at only 0.34; (iii) 50 images give a standard error of 0.017. What does hold is that the ordering of our own submissions agreed with the hold-out ordering: 0.3754 (proxy) scored 0.33, an R34+R50 mix (0.4030, proxy) scored 0.34, and the refiner pipeline (0.4325) scored 0.36.
 * Roughly 58% of training images have one annotator pass and give no consensus signal; a consensus-target retraining would be limited to the multi-pass subset.
 * We did not use, and the pipeline does not depend on, any labels outside the competition annotations.
@@ -62,7 +78,7 @@ not consistent with legitimate modelling quality. Descriptive facts from the pub
 20 September 2026; scores rounded to two decimals): the scores form a smooth, bell-shaped distribution that ends at 0.41
 (2 teams at 0.41, 9 at 0.40); there is then no team between 0.42 and 0.48 and one at 0.49, followed by 41 teams between
 0.545 and 0.555 and five teams at 0.56-0.62. Our 0.36 ranks about 143rd of 657, or about 96th of the roughly 610 teams
-below that gap. This is context, not a statement about any particular team.
+below that gap. This is context, not a statement about any particular team. Among the public notebooks we inspected, one trains a small network but does not use it and instead writes out a pre-computed submission embedded in the notebook (1,342 masks over 178 test images); its last run (3 September) is later than the last-submission dates of several teams in the 0.55 group (from 26 August), so it cannot be the only source of that group. We did not use its content.
 
 The organizers have stated that scores of this kind are not considered valid ("we can easily weed out the fake ones",
 competition forum topic 740400), that any PQ above 0.35 is "of great value" to them (competition announcement of
@@ -89,7 +105,23 @@ and qualitative criteria (competition "Evaluation" page).
 * **AI assistance.** The code, analyses and this document were developed with an AI coding assistant (Claude Code) under
   the author's direction.
 
-## 9. Reproducibility
+## 9. Conclusions and outlook
+* **What is robust.** A two-stage pipeline (5-fold U-Net ensemble with flip TTA plus a crop refiner) reaches hold-out PQ 0.4325
+  and leaderboard 0.36. The refiner (+0.0177) is the only change with a measurable effect; everything else we tried was
+  indistinguishable from zero at the resolution of a 50-image hold-out.
+* **What limits it.** Annotators agree with each other at only PQ 0.34, most remaining errors are boundary near-misses
+  or disagreements about which objects exist, and on the multi-pass hold-out images about half (54%) of the false-positive counts come
+  from candidates that at least one other annotator marked.
+* **What has some support.** Predicting only objects marked by at least two passes is worth about +0.0145 PQ in a
+  target simulation, but a classifier for that property gained only +0.0024 out of sample (oracle bound +0.0132), so any
+  realised gain is small.
+* **What we would do with more time or compute.** First estimate the noise properly (out-of-fold predictions and repeated
+  seeds), then test a consensus-target retraining on the multi-pass subset (about 42% of the training images); pursue
+  domain-specific pretraining only if a cheap CPU test shows a domain shift between ImageNet and H-alpha features.
+* **What we deliberately did not do.** Optimise against the upper end of the leaderboard or use any annotations beyond the
+  competition's own (see sections 7 and 8).
+
+## 10. Reproducibility
 Code, pinned requirements, weights (Apache-2.0, public Kaggle dataset with checksums) and an end-to-end notebook are in the repository; the notebook was validated on Kaggle from the public weights (identical per-image official counts on 3 hold-out images; format-valid output on 2 test images). The full 180-image submission was produced by the same code path in earlier kernels. Repository: https://github.com/Alphine/filament (default branch `final`). Weights: https://www.kaggle.com/datasets/abukayyisahbasyid/filament-segmentation-2026-weights. Public demo notebook: https://www.kaggle.com/code/abukayyisahbasyid/filament-two-stage-inference.
 
 ## References
