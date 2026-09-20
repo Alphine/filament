@@ -56,7 +56,7 @@ All measured against the same hold-out, official PQ unless noted.
 * We did not use, and the pipeline does not depend on, any labels outside the competition annotations.
 
 ## 7. Reproducibility
-Code, pinned requirements, weights (Apache-2.0, public Kaggle dataset with checksums) and an end-to-end notebook are in the repository; the notebook was validated on Kaggle from the public weights (identical per-image official counts on 3 hold-out images; format-valid output on 2 test images). The full 180-image submission was produced by the same code path in earlier kernels. [Author: add repository URL.]
+Code, pinned requirements, weights (Apache-2.0, public Kaggle dataset with checksums) and an end-to-end notebook are in the repository; the notebook was validated on Kaggle from the public weights (identical per-image official counts on 3 hold-out images; format-valid output on 2 test images). The full 180-image submission was produced by the same code path in earlier kernels. Repository: https://github.com/Alphine/filament (default branch `final`). Weights: https://www.kaggle.com/datasets/abukayyisahbasyid/filament-segmentation-2026-weights. Public demo notebook: https://www.kaggle.com/code/abukayyisahbasyid/filament-two-stage-inference.
 
 ## References
 [Add: Panoptic Quality (Kirillov et al., CVPR 2019); U-Net (Ronneberger et al., 2015); ResNet (He et al., 2016); segmentation_models_pytorch; the MAGFiLO dataset paper.]
