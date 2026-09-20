@@ -1,0 +1,14 @@
+{
+  "ensemble_pq": 0.3754063489140944,
+  "single_pq": 0.33475321807087993,
+  "classical_pq": 0.19985337293988686,
+  "params": {
+    "thr": 0.4,
+    "min_area": 400,
+    "min_mean_prob": 0.7
+  },
+  "n_folds": 5,
+  "epochs": 30,
+  "n_val": 50,
+  "n_pool": 657
+}

@@ -1,0 +1,129 @@
+{
+  "n_files_3pass": 151,
+  "min_area": 100,
+  "match_iou": 0.3,
+  "variants": {
+    "single_A": {
+      "pq": 0.3181,
+      "se": 0.0111,
+      "tp": 1552,
+      "fp": 1558,
+      "fn": 1454,
+      "mean_pred_instances_per_case": 6.86
+    },
+    "single_B": {
+      "pq": 0.3493,
+      "se": 0.0102,
+      "tp": 1622,
+      "fp": 1282,
+      "fn": 1386,
+      "mean_pred_instances_per_case": 6.41
+    },
+    "pix_union_cc": {
+      "pq": 0.3336,
+      "se": 0.0096,
+      "tp": 1694,
+      "fp": 1748,
+      "fn": 1312,
+      "mean_pred_instances_per_case": 7.6
+    },
+    "pix_inter_cc": {
+      "pq": 0.3183,
+      "se": 0.0104,
+      "tp": 1417,
+      "fp": 1249,
+      "fn": 1589,
+      "mean_pred_instances_per_case": 5.88
+    },
+    "inst_union_keep": {
+      "pq": 0.3338,
+      "se": 0.0097,
+      "tp": 1802,
+      "fp": 2035,
+      "fn": 1206,
+      "mean_pred_instances_per_case": 8.47
+    },
+    "inst_inter_keep": {
+      "pq": 0.3187,
+      "se": 0.011,
+      "tp": 1726,
+      "fp": 2110,
+      "fn": 1282,
+      "mean_pred_instances_per_case": 8.47
+    },
+    "inst_union_drop": {
+      "pq": 0.3482,
+      "se": 0.0096,
+      "tp": 1410,
+      "fp": 767,
+      "fn": 1596,
+      "mean_pred_instances_per_case": 4.8
+    },
+    "inst_inter_drop": {
+      "pq": 0.3283,
+      "se": 0.0107,
+      "tp": 1334,
+      "fp": 842,
+      "fn": 1672,
+      "mean_pred_instances_per_case": 4.8
+    }
+  },
+  "paired_vs_pix_union_cc": {
+    "single_A": {
+      "diff_mean": -0.0156,
+      "ci95": [
+        -0.0256,
+        -0.0056
+      ]
+    },
+    "single_B": {
+      "diff_mean": 0.0159,
+      "ci95": [
+        0.0062,
+        0.0266
+      ]
+    },
+    "pix_inter_cc": {
+      "diff_mean": -0.0153,
+      "ci95": [
+        -0.0291,
+        -0.0008
+      ]
+    },
+    "inst_union_keep": {
+      "diff_mean": 0.0004,
+      "ci95": [
+        -0.0046,
+        0.0054
+      ]
+    },
+    "inst_inter_keep": {
+      "diff_mean": -0.0149,
+      "ci95": [
+        -0.0255,
+        -0.0044
+      ]
+    },
+    "inst_union_drop": {
+      "diff_mean": 0.0145,
+      "ci95": [
+        0.0061,
+        0.0231
+      ]
+    },
+    "inst_inter_drop": {
+      "diff_mean": -0.0053,
+      "ci95": [
+        -0.0178,
+        0.0089
+      ]
+    }
+  },
+  "mean_instances_per_pass_gt": 6.64,
+  "mean_match": {
+    "n_A": 6.86,
+    "n_B": 6.41,
+    "n_matched": 4.8
+  },
+  "elapsed_s": 201.2
+}

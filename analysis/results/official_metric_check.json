@@ -1,0 +1,14 @@
+{
+  "proxy_pq": 0.2875408251063953,
+  "official_pq": 0.285925679018932,
+  "official_tp": 320,
+  "official_fp": 490,
+  "official_fn": 291,
+  "kaggle_score": 0.24,
+  "params": {
+    "thr": 0.4,
+    "min_area": 600
+  },
+  "n_annotator_images": 79,
+  "n_images": 50
+}

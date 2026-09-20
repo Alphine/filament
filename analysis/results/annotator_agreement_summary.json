@@ -1,0 +1,71 @@
+{
+ "n_files_total": 707,
+ "n_files_multipass": 296,
+ "passes_per_file": {
+  "1": 411,
+  "2": 145,
+  "3": 151
+ },
+ "all_multipass": {
+  "name": "all multi-pass images",
+  "n_images": 296,
+  "n_pairs": 1196,
+  "pq": 0.3399,
+  "pq_se_bootstrap": 0.0081,
+  "tp": 4292,
+  "fp": 3709,
+  "fn": 3709,
+  "mean_iou_tp": 0.6337,
+  "median_iou_tp": 0.6295,
+  "frac_iou_ge_0.85": 0.0014,
+  "frac_iou_lt_0.65": 0.5955,
+  "errors": {
+   "FP_localization": 2289,
+   "FN_pure": 1420,
+   "FN_localization": 2289,
+   "FP_pure": 1420
+  },
+  "near_miss_share_of_errors": 0.6171,
+  "per_image_pq_quantiles": {
+   "10": 0.1352,
+   "25": 0.245,
+   "50": 0.3454,
+   "75": 0.4432,
+   "90": 0.5391
+  }
+ },
+ "holdout50": {
+  "name": "hold-out 50 (seed 1234), multi-pass only",
+  "n_images": 19,
+  "n_pairs": 78,
+  "pq": 0.3516,
+  "pq_se_bootstrap": 0.0295,
+  "tp": 302,
+  "fp": 247,
+  "fn": 247,
+  "mean_iou_tp": 0.6392,
+  "median_iou_tp": 0.6356,
+  "frac_iou_ge_0.85": 0.0066,
+  "frac_iou_lt_0.65": 0.6093,
+  "errors": {
+   "FP_localization": 167,
+   "FP_pure": 80,
+   "FN_localization": 167,
+   "FN_pure": 80
+  },
+  "near_miss_share_of_errors": 0.6761,
+  "per_image_pq_quantiles": {
+   "10": 0.2436,
+   "25": 0.2738,
+   "50": 0.3311,
+   "75": 0.4344,
+   "90": 0.5466
+  }
+ },
+ "elapsed_s": 3.5,
+ "our_model_reference": {
+  "mean_iou_tp": 0.676,
+  "near_miss_share_of_errors": 0.538,
+  "official_pq": 0.4325
+ }
+}

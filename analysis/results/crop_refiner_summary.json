@@ -1,0 +1,17 @@
+{
+  "proxy_coarse_pq": 0.40395945352897816,
+  "proxy_refined_pq": 0.4236656564767375,
+  "official_coarse_pq": 0.4150627955519934,
+  "official_refined_pq": 0.4328080788910914,
+  "margin": 0.017745283339098028,
+  "noise_floor": 0.0016,
+  "submitted": true,
+  "classical_pq": 0.19985337293988686,
+  "integrity_classical": true,
+  "integrity_stage_a": false,
+  "ref_previous_ens_pq": 0.4026232478903755,
+  "n_train_instances": 6474,
+  "n_val": 50,
+  "refine_epochs": 13,
+  "refine_crop": 512
+}
