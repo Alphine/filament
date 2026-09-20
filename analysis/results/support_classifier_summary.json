@@ -1,0 +1,49 @@
+{
+ "n_images": 50,
+ "n_candidates": 420,
+ "n_multipass_candidates": 147,
+ "n_supported": 91,
+ "auc": {
+  "logistic": {
+   "auc": 0.7679,
+   "ci95": [
+    0.6545,
+    0.8755
+   ]
+  },
+  "GBM": {
+   "auc": 0.7512,
+   "ci95": [
+    0.6678,
+    0.8374
+   ]
+  }
+ },
+ "auc_mean_p": {
+  "auc": 0.7239,
+  "ci95": [
+   0.6111,
+   0.8178
+  ]
+ },
+ "base_pq": 0.4325,
+ "oracle_pq": 0.4457,
+ "simulated_pq": {
+  "0.05": 0.4359,
+  "0.1": 0.4382,
+  "0.15": 0.4349,
+  "0.2": 0.4274,
+  "0.25": 0.4196,
+  "0.3": 0.4132,
+  "0.4": 0.3926
+ },
+ "split_half_cv_gain": {
+  "mean": 0.0024,
+  "median": 0.0032,
+  "p_gain_positive": 0.78
+ },
+ "best_in_sample_gain": 0.0057,
+ "letter_of_rule_passed": true,
+ "actionable": false,
+ "verdict": "MARGINAL PASS of the pre-set rule but NOT ACTIONABLE: the best threshold was picked from 7, its paired CI includes 0, and the out-of-sample gain is below +0.005"
+}

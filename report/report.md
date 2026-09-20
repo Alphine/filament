@@ -41,6 +41,7 @@ All measured against the same hold-out, official PQ unless noted.
 | Topology-safe TTA gating on the refiner | -0.0009 | gate accepted 419 of 420 instances |
 | Ensemble with a public Mask R-CNN model | +0.0028 | not distinguishable from zero; that model alone scored 0.4236; excluded from the released pipeline |
 | Second ResNet34 ensemble / R34+R50 mix | about +-0.002 | TTA absorbs the diversity gain |
+| Predict "supported by >= 2 annotator passes" from candidate features and drop unsupported candidates (post-hoc filter) | +0.0024 out-of-sample (best of 7 thresholds in-sample +0.0057, paired CI includes 0) | AUC 0.77 (CI95 0.65-0.88) on 147 candidates from 19 multi-pass hold-out images versus 0.72 for the mean probability alone; even an oracle that knows the labels gains only +0.0132 over all 50 images |
 
 ## 5. Where the remaining error comes from
 **Error decomposition** (final pipeline on the hold-out, TP/FP/FN = 400/239/211): 54% of the 450 errors are near-misses, i.e. a prediction and a ground-truth filament overlap but with IoU <= 0.5 (132 of 239 FP, 110 of 211 FN); the rest have no overlap at all. The mean IoU of true positives is 0.676.
