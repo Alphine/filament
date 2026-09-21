@@ -1,0 +1,151 @@
+\documentclass[sigconf]{acmart}
+\input{preamble}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+
+% Guide styling: \guideStyletrue = show gray italic hints; \guideStylefalse = omit them
+% \guideStyletrue
+\guideStylefalse
+
+\begin{document}
+
+\title[Two-Stage Solar Filament Segmentation]{Two-Stage Solar Filament Instance Segmentation: A Five-Fold U-Net Ensemble with a Crop Refiner}
+\subtitle{A Solution to the Solar Filament Segmentation Challenge 2026} % DO NOT CHANGE
+
+\author{Abu Kayyisah Basyid}
+\email{first.author@example.com}   % <- Replace with your own email
+
+\begin{abstract}
+    This report describes our solution to the Solar Filament Segmentation Challenge~2026, a Kaggle competition on automatic segmentation of solar filaments in GONG H-$\alpha$ observations.
+    We combine a five-fold ResNet34 U-Net ensemble with flip test-time augmentation, which proposes candidate instances, and a crop-level refiner that redraws each candidate from a box-shaped seed. On a 50-image hold-out never used for training or model selection the pipeline reaches a panoptic quality (PQ) of 0.4325 (95\% interval 0.399--0.465) and 0.36 on the public leaderboard. The refiner is the only change with a measurable effect; most post-processing and loss ideas we tried were indistinguishable from zero at the resolution of the hold-out. Two annotators agree with each other at only PQ~0.34, so a large share of the remaining error is annotation ambiguity. We use only the competition's own data.
+\end{abstract}
+
+\maketitle
+
+% =============================================================================
+%                                INTRODUCTION
+% =============================================================================
+\section{Introduction}
+    This report goes over the details of our submitted solution to the Solar Filament Segmentation Challenge~2026 \cite{filament-segmentation-2026}. The challenge, launched on July~10,~2026, is organized by the Earth-Space AI Research (ESAIR) Lab\footnote{\href{https://www.esairlab.com/home}{www.esairlab.com/}}. This challenge utilizes the MAGFiLO dataset for evaluation of the segmentation algorithms \cite{ahmadzadeh2024dataset}.
+    We describe a fully supervised, two-stage pipeline built only on the competition's data, and we put emphasis on measuring uncertainty: with 50 hold-out images most differences between design choices turn out to be smaller than the sampling error, and we report them as such.
+
+% =============================================================================
+%                                METHODOLOGY
+% =============================================================================
+\section{Methodology}\label{sec:methodology}
+
+\subsection{Data and splits}
+We use the 707 annotated training images ($2048{\times}2048$) and the 180 test images. Each training image carries one to three annotator passes (411, 145 and 151 images, respectively); a pass is an independent set of instance polygons. A fixed hold-out of 50 training images (seed 1234) is excluded from every training fold, from checkpoint selection and from the refiner's training. The remaining 657 images form five folds (about 526 images for training and 131 for choosing the checkpoint per fold).
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=5.2mm, every node/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=3.5pt, minimum height=1.05cm, fill=blue!6},
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+  \node[box, fill=gray!12] (img) {H-$\alpha$ image\\$2048^2$};
+  \node[box, right=of img] (a) {Stage-A: 5 U-Nets (ResNet34)\\$\times$ 4 flips, 512-px windows\\$\Rightarrow$ probability map};
+  \node[box, right=of a] (c) {Candidates: $p{>}0.4$, closing,\\components, area $\in[400,40000]$,\\mean $p \ge 0.7$};
+  \node[box, right=of c] (r) {Crop refiner (U-Net, R34)\\crop $512^2$: [image, CLAHE,\\padded-box seed] $\Rightarrow$ mask};
+  \node[box, right=of r, fill=green!8] (o) {One mask per\\instance (RLE)};
+  \draw[arr] (img) -- (a); \draw[arr] (a) -- (c); \draw[arr] (c) -- (r); \draw[arr] (r) -- (o);
+\end{tikzpicture}
+\caption{End-to-end pipeline. Everything is inference-only after training; no other post-processing is applied.}
+\label{fig:pipeline}
+\end{figure*}
+
+\subsection{Pipeline}
+Figure~\ref{fig:pipeline} summarises the pipeline.
+\paragraph{Stage-A.} Five U-Nets \cite{ronneberger2015unet} with ImageNet-initialised ResNet34 encoders \cite{he2016resnet}, one per fold, are trained for 30 epochs of 220 steps (batch 8, 512-px patches, 75\% centred on filaments) with a Tversky loss ($\alpha{=}0.3$, $\beta{=}0.7$) \cite{salehi2017tversky} plus binary cross-entropy, AdamW \cite{loshchilov2019decoupled} and a one-cycle schedule \cite{smith2017superconvergence} peaking at $10^{-4}$. The target is the pixel union of all annotator passes. At inference the probabilities of 5 models $\times$ 4 flips (identity, left--right, up--down, $180^\circ$) are averaged over 512-px windows with stride 384, each window z-scored on its own.
+
+\paragraph{Candidates.} We threshold at 0.4, close with a $3{\times}3$ ellipse, take 8-connected components and keep those with area 400--40000 px and mean probability $\ge 0.7$. These thresholds were tuned on the hold-out; a later simulation found no out-of-sample gain from tightening them.
+
+\paragraph{Crop refiner.} For each candidate a square crop (1.5$\times$ the longest box side, at least 96 px) is resized to $512^2$ and fed as three channels: the crop, its CLAHE version \cite{zuiderveld1994clahe} and a seed, the bounding box padded by 40\%. A U-Net with a ResNet34 encoder \cite{iakubovskii2019smp} predicts the mask (threshold 0.5). It is trained for 13 epochs on 6,474 crops (every annotator instance is one sample) with the loss $0.45\,\text{BCE}+0.55\,\text{soft Dice}$. The seed box is jittered during training (shift $\pm15\%$, scale 0.85--1.25, padding 20--60\%) so the network cannot memorise the exact box; training with the true mask as seed makes it copy its input.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.93\textwidth]{fig_examples.png}
+\caption{The first three hold-out images (not selected; each has one annotator pass). Top: annotated filaments, matched by a prediction (green) or missed (yellow). Bottom: our predictions, matched (cyan) or unmatched (red). PQ is the official per-image value.}
+\label{fig:examples}
+\end{figure*}
+
+% =============================================================================
+%                                EVALUATION
+% =============================================================================
+\section{Evaluation}\label{sec:evaluation}
+
+\subsection{Protocol}
+We use the official panoptic quality \cite{kirillov2019panoptic}, $\text{PQ}=\sum_{TP}\text{IoU}/(|TP|+\tfrac12|FP|+\tfrac12|FN|)$ with a match at $\text{IoU}>0.5$, computed against every annotator pass separately and pooled. All comparisons use the same 50-image hold-out; uncertainty is a bootstrap over images (4000 resamples). Early runs used a proxy that scores against the pass with the most instances; official PQ is used from the TTA row of Table~\ref{tab:main} on.
+
+\begin{table}[t]
+\centering
+\caption{Progression on the 50-image hold-out. $^\dagger$proxy metric.}
+\label{tab:main}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & Hold-out PQ & Leaderboard\\
+\midrule
+Single U-Net$^\dagger$ & 0.3348 & --\\
+5-fold ensemble, no TTA$^\dagger$ & 0.3754 & 0.33\\
+\quad + flip TTA & 0.4151 & --\\
+\quad + crop refiner (final) & \textbf{0.4325} & \textbf{0.36}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Results and negative results}
+The final pipeline reaches PQ 0.4325 (95\% interval 0.399--0.465; TP/FP/FN $=400/239/211$) and 0.36 on the leaderboard. The refiner adds $+0.0177$ on the hold-out and $+0.02$ on the leaderboard. Everything else we tried (Table~\ref{tab:neg}) was within noise or harmful; because the standard error of a single PQ is 0.017, we treat differences below about 0.005 as unproven.
+
+\begin{table}[t]
+\centering
+\caption{Ideas that did not help (change in hold-out PQ).}
+\label{tab:neg}
+\small
+\begin{tabular}{@{}p{5.6cm}r@{}}
+\toprule
+Idea & $\Delta$PQ\\
+\midrule
+Hard-negative training of the refiner & $+0.0006$\\
+Skeleton-recall loss & $-0.0037$\\
+Watershed instance splitting & $0.433\to0.060$\\
+Shape filter (aspect, circularity) & $-0.0044$\\
+Topology-safe TTA gating & $-0.0009$\\
+Ensemble with a public Mask R-CNN & $+0.0028$\\
+Second ensemble / R34+R50 mix & $\approx\pm0.002$\\
+Predict ``$\ge$2-pass support'', drop the rest & $+0.0024$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Error analysis and uncertainty}
+Figure~\ref{fig:examples} shows typical behaviour: long filaments are recovered well, misses are mostly short or faint filaments, and many unmatched predictions are short dark structures, some of which may be real but unannotated filaments (the challenge forum reports missing annotations). Of the 450 hold-out errors, 54\% are localisation near-misses (a prediction overlaps a filament with $\text{IoU}\le0.5$); the mean IoU of true positives is 0.676. Treating one annotator pass as a prediction of another with the same rules gives only PQ~0.34 (mean matched IoU 0.63, and 0.14\% of matched pairs reach IoU 0.85), so the ceiling set by the labels is low (Fig.~\ref{fig:unc}). On the multi-pass hold-out images about half (54\%) of the false-positive counts come from candidates that another annotator did mark. Predicting only objects marked by at least two passes is worth $+0.0145$ PQ in a target simulation on the annotations, but a classifier for that property gained only $+0.0024$ out of sample (an oracle $+0.0132$), so we did not retrain.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_uncertainty.pdf}
+\caption{PQ with 95\% bootstrap intervals: our model (blue) versus annotators scored against each other (orange).}
+\label{fig:unc}
+\end{figure}
+
+\subsection{Strengths, weaknesses, and possible improvements}
+\textbf{Strengths.} The pipeline is simple, reproducible from public weights (Apache-2.0), and needs about 3 minutes per image on a 4-core CPU; the refiner gives a consistent boundary improvement. \textbf{Weaknesses.} The 50-image hold-out cannot resolve small gains; thresholds were tuned on it; the leaderboard score (0.36) is below the hold-out PQ, and we could not determine why (different test distribution or fewer annotator passes are hypotheses only). \textbf{Improvements.} Estimate the noise properly with out-of-fold predictions over all 657 images (standard error about 0.004), then test a consensus-target retraining on the multi-pass subset; audited but not run for lack of expected gain were a full clDice loss, a vesselness channel, a second ensemble and self-supervised pretraining on public H-$\alpha$ images.
+
+\subsection{Data compliance and leaderboard context}
+Only the competition's training images and annotations were used. The public MAGFiLO release is reported by participants to contain annotations of the test images; we neither downloaded nor consulted it, and used no test labels or third-party submission files. The leaderboard shows a gap between 0.41 and 0.55 with 41 of 657 teams near 0.55, which the organizers say they do not consider valid; our 0.36 ranks about 96th of the roughly 610 teams below that gap. Code, weights and an end-to-end notebook are at \url{https://github.com/Alphine/filament} and on Kaggle (\url{https://www.kaggle.com/datasets/abukayyisahbasyid/filament-segmentation-2026-weights}). The code and this report were developed with an AI coding assistant under the author's direction.
+
+% =============================================================================
+%                              ACKNOWLEDGMENT
+% =============================================================================
+\section{Acknowledgment}\label{sec:acknowledgment}
+    % Do not change
+    The organization of the Filament Segmentation Challenge 2026 is partially supported by the U.S. National Science Foundation (NSF) under Grant No. 2209912 and 2433781, directorate for Computer and Information Science and Engineering (CSE), and Office of Advanced Cyberinfrastructure (OAC), and Grant No. 2511630, AST Division Of Astronomical Sciences and MPS Directorate for Mathematical and Physical Sciences.
+
+    The Filament Segmentation Challenge 2026 is sponsored by the U.S. National Science Foundation (NSF) National Solar Observatory (NSO).
+
+    This work utilizes GONG data obtained by the NSO Integrated Synoptic Program, managed by the National Solar Observatory, which is operated by the Association of Universities for Research in Astronomy (AURA), Inc. under a cooperative agreement with the National Science Foundation and with contribution from the National Oceanic and Atmospheric Administration. The GONG network of instruments is hosted by the Big Bear Solar Observatory, High Altitude Observatory, Learmonth Solar Observatory, Udaipur Solar Observatory, Instituto de Astrofísica de Canarias, and Cerro Tololo Interamerican Observatory.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{main}
+
+\end{document}

@@ -24,7 +24,11 @@ filament_metric.py        the official PQ, per annotator pass; fixed hold-out sp
 requirements.txt          pinned versions taken from the Kaggle image used for all runs
 training/                 the two Kaggle GPU scripts that produced the weights
 analysis/                 error decomposition, annotator agreement, consensus-target and threshold studies (scripts + results)
-report/report.md          technical report
+report/report.md          long-form technical report (all findings)
+report/overleaf/          the 4-page report in the organizers' ACM (acmart) Overleaf template: main.tex, preamble.tex,
+                          main.bib, figures, overleaf_project.zip (upload to Overleaf) and report_compiled_tectonic.pdf
+                          (3 pages including acknowledgment and references; compiled with tectonic, so Overleaf's
+                          pdfLaTeX output may differ slightly)
 LICENSE                   Apache-2.0
 ```
 
