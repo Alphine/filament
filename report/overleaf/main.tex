@@ -99,7 +99,7 @@ The final pipeline reaches PQ 0.4325 (95\% interval 0.399--0.465; TP/FP/FN $=400
 
 \begin{table}[t]
 \centering
-\caption{Ideas that did not help (change in hold-out PQ).}
+\caption{Ideas that did not help (change in hold-out PQ; for filters and rules chosen among several settings, the split-half cross-validated gain).}
 \label{tab:neg}
 \small
 \begin{tabular}{@{}p{5.6cm}r@{}}
@@ -115,6 +115,8 @@ Ensemble with a public Mask R-CNN & $+0.0028$\\
 Second ensemble / R34+R50 mix & $\approx\pm0.002$\\
 Predict ``$\ge$2-pass support'', drop the rest & $+0.0024$\\
 Drop by TTA/fold disagreement (\texttt{std\_views}) & $+0.0020$\\
+Merge fragments within $d$ px (oracle $+0.0127$) & $-0.0001$\\
+Re-tune thresholds for single-pass images & $+0.0003$\\
 \bottomrule
 \end{tabular}
 \end{table}

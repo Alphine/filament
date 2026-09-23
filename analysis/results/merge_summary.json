@@ -1,0 +1,189 @@
+{
+ "n_images": 50,
+ "base_pq": 0.4325,
+ "oracle": {
+  "oracle_union": {
+   "pq": 0.4452,
+   "gain": 0.0127,
+   "merges": 18,
+   "gain_single_pass": 0.0198
+  },
+  "oracle_refine": {
+   "pq": 0.4452,
+   "gain": 0.0127,
+   "merges": 15,
+   "gain_single_pass": 0.0195
+  }
+ },
+ "rules": {
+  "union@5": {
+   "pq": 0.4325,
+   "gain": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "gain_single_pass": 0.0
+  },
+  "union@10": {
+   "pq": 0.4356,
+   "gain": 0.0031,
+   "ci95": [
+    0.0,
+    0.0077
+   ],
+   "gain_single_pass": 0.0071
+  },
+  "union@20": {
+   "pq": 0.4343,
+   "gain": 0.0019,
+   "ci95": [
+    -0.0038,
+    0.0086
+   ],
+   "gain_single_pass": 0.0064
+  },
+  "union@30": {
+   "pq": 0.4215,
+   "gain": -0.011,
+   "ci95": [
+    -0.0244,
+    0.0011
+   ],
+   "gain_single_pass": -0.0117
+  },
+  "union@45": {
+   "pq": 0.4166,
+   "gain": -0.0159,
+   "ci95": [
+    -0.0339,
+    0.0017
+   ],
+   "gain_single_pass": -0.0098
+  },
+  "union@60": {
+   "pq": 0.4028,
+   "gain": -0.0297,
+   "ci95": [
+    -0.0491,
+    -0.0092
+   ],
+   "gain_single_pass": -0.0203
+  },
+  "union_close@5": {
+   "pq": 0.4325,
+   "gain": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "gain_single_pass": 0.0
+  },
+  "union_close@10": {
+   "pq": 0.4356,
+   "gain": 0.0032,
+   "ci95": [
+    0.0,
+    0.0081
+   ],
+   "gain_single_pass": 0.0073
+  },
+  "union_close@20": {
+   "pq": 0.4351,
+   "gain": 0.0026,
+   "ci95": [
+    -0.0035,
+    0.0093
+   ],
+   "gain_single_pass": 0.0061
+  },
+  "union_close@30": {
+   "pq": 0.4193,
+   "gain": -0.0131,
+   "ci95": [
+    -0.0296,
+    0.0007
+   ],
+   "gain_single_pass": -0.0124
+  },
+  "union_close@45": {
+   "pq": 0.4144,
+   "gain": -0.0181,
+   "ci95": [
+    -0.0383,
+    -0.0008
+   ],
+   "gain_single_pass": -0.0134
+  },
+  "union_close@60": {
+   "pq": 0.3905,
+   "gain": -0.042,
+   "ci95": [
+    -0.0648,
+    -0.0191
+   ],
+   "gain_single_pass": -0.0326
+  },
+  "cand_refine@5": {
+   "pq": 0.4349,
+   "gain": 0.0025,
+   "ci95": [
+    -0.0011,
+    0.0073
+   ],
+   "gain_single_pass": 0.0055
+  },
+  "cand_refine@10": {
+   "pq": 0.4348,
+   "gain": 0.0024,
+   "ci95": [
+    -0.003,
+    0.0082
+   ],
+   "gain_single_pass": 0.0051
+  },
+  "cand_refine@20": {
+   "pq": 0.4281,
+   "gain": -0.0043,
+   "ci95": [
+    -0.0159,
+    0.0061
+   ],
+   "gain_single_pass": 0.0004
+  },
+  "cand_refine@30": {
+   "pq": 0.4198,
+   "gain": -0.0126,
+   "ci95": [
+    -0.0268,
+    0.0003
+   ],
+   "gain_single_pass": -0.0108
+  },
+  "cand_refine@45": {
+   "pq": 0.4129,
+   "gain": -0.0196,
+   "ci95": [
+    -0.0386,
+    -0.0018
+   ],
+   "gain_single_pass": -0.0119
+  },
+  "cand_refine@60": {
+   "pq": 0.3974,
+   "gain": -0.0351,
+   "ci95": [
+    -0.0581,
+    -0.0131
+   ],
+   "gain_single_pass": -0.0204
+  }
+ },
+ "best_rule_in_sample": "union_close@10",
+ "split_half_cv_gain": {
+  "mean": -0.0001,
+  "median": 0.0007,
+  "p_gain_positive": 0.544
+ },
+ "verdict": "ORACLE PASSES (+0.0127) but the realistic distance rules are NOT ACTIONABLE (out-of-sample -0.0001 < +0.005): a better merge decision rule would be needed"
+}

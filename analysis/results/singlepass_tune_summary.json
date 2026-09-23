@@ -1,0 +1,26 @@
+{
+ "n_images": 50,
+ "n_single": 31,
+ "n_configs": 300,
+ "integrity_ok": false,
+ "production": {
+  "all": 0.4311,
+  "single": 0.3933,
+  "multi": 0.4595
+ },
+ "best_single_in_sample": {
+  "config": "0.3|0.65|200|0.6",
+  "single": 0.4066,
+  "multi": 0.4418,
+  "all": 0.4268
+ },
+ "cv_single_tuned": {
+  "mean": 0.0003,
+  "p_gain_positive": 0.618
+ },
+ "cv_all_tuned": {
+  "mean": -0.007,
+  "p_gain_positive": 0.202
+ },
+ "verdict": "NOT ACTIONABLE: out-of-sample gain on single-pass images below +0.005"
+}
