@@ -1,0 +1,46 @@
+{
+ "n_images": 50,
+ "n_candidates": 420,
+ "base_pq": 0.4325,
+ "results": {
+  "std_views_alone": {
+   "auc": 0.7051,
+   "auc_ci95": [
+    0.6529,
+    0.7639
+   ],
+   "best_in_sample_gain": 0.005,
+   "split_half_cv_gain_mean": 0.002,
+   "p_gain_positive": 0.697,
+   "letter_of_rule_passed": true,
+   "actionable": false,
+   "verdict": "MARGINAL PASS but NOT ACTIONABLE (out-of-sample gain < +0.005)"
+  },
+  "mean_p_alone": {
+   "auc": 0.6976,
+   "auc_ci95": [
+    0.6458,
+    0.7537
+   ],
+   "best_in_sample_gain": 0.0025,
+   "split_half_cv_gain_mean": -0.0004,
+   "p_gain_positive": 0.577,
+   "letter_of_rule_passed": false,
+   "actionable": false,
+   "verdict": "STOP (falsified)"
+  },
+  "logistic(std_views, mean_p)": {
+   "auc": 0.6846,
+   "auc_ci95": [
+    0.6304,
+    0.7469
+   ],
+   "best_in_sample_gain": 0.0017,
+   "split_half_cv_gain_mean": -0.0025,
+   "p_gain_positive": 0.45,
+   "letter_of_rule_passed": false,
+   "actionable": false,
+   "verdict": "STOP (falsified)"
+  }
+ }
+}

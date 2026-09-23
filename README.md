@@ -8,7 +8,7 @@ Instance segmentation of solar filaments in H-alpha images (MAGFiLO) for the IEE
 | **Hold-out PQ** (50 images, never used for training or model selection) | **0.4325** (bootstrap SE 0.017) |
 | **Public leaderboard PQ** | **0.36** |
 | Annotator-vs-annotator PQ on the training data (same rule) | 0.34 |
-| Weights | Kaggle dataset [`abukayyisahbasyid/filament-segmentation-2026-weights`](https://www.kaggle.com/datasets/abukayyisahbasyid/filament-segmentation-2026-weights) (Apache-2.0) |
+| Weights | Not currently published (see note below); Apache-2.0 |
 
 ## Method in one paragraph
 A 5-fold ResNet34 U-Net ensemble with dihedral TTA produces a probability map (stage-A). Connected
@@ -32,20 +32,30 @@ report/overleaf/          the 4-page report in the organizers' ACM (acmart) Over
 LICENSE                   Apache-2.0
 ```
 
-## Reproduce the submission
-**On Kaggle (recommended).** Create a notebook from `pipeline.ipynb`, attach (1) the weights dataset
-above and (2) the competition data, enable a GPU (T4) and internet (only to `pip install
-segmentation-models-pytorch==0.5.0`), copy `filament_pipeline.py` and `filament_metric.py` next to the
-notebook, and run all cells. `submission.csv` is written to `/kaggle/working`.
+## Weights availability
+The trained weights (`unet_fold1..5.pt`, `refiner_best.pt`) are not published on Kaggle right now.
+They were briefly on a public Kaggle dataset and are being kept unpublished until shortly before the
+15 Nov 2026 submission deadline, to limit how early competitors can build on this exact checkpoint
+while the competition is still open; this does not affect the code, which is complete and public here.
+The files, with the same SHA256 checksums that were on the dataset (`SHA256SUMS.txt` below), and the
+exact `training/` scripts and data split that produced them, are kept privately by the author and will
+be re-published as a Kaggle dataset before the deadline, with this README updated to link it.
 
-**Locally.** `pip install -r requirements.txt`, download the weights dataset and the competition
+## Reproduce the submission
+**On Kaggle (recommended, once the weights dataset is re-published).** Create a notebook from
+`pipeline.ipynb`, attach (1) the weights dataset and (2) the competition data, enable a GPU (T4) and
+internet (only to `pip install segmentation-models-pytorch==0.5.0`), copy `filament_pipeline.py` and
+`filament_metric.py` next to the notebook, and run all cells. `submission.csv` is written to
+`/kaggle/working`.
+
+**Locally.** `pip install -r requirements.txt`, obtain the weights (see above) and the competition
 data, then set `FILAMENT_WEIGHTS` (folder with `unet_fold1..5.pt`, `refiner_best.pt`) and
 `FILAMENT_INPUT` (root that contains `train_images/`, `test_images/` and the annotation JSON) and run
 the notebook from this folder.
 
 `MAX_TEST_IMAGES` limits the run for a smoke test; `EVAL_HOLDOUT_IMAGES = 50` scores the hold-out
 with the official PQ (expected 0.4325 up to CPU/GPU floating-point noise, about +-0.002).
-Checksums of every weight file are in the dataset's `SHA256SUMS.txt`.
+Checksums of every weight file are in `SHA256SUMS.txt` below.
 
 Measured cost: about 3 minutes per image on the 4-core Kaggle CPU when one notebook runs alone (up to
 5 when several run in parallel); stage-A with 5 models x 4 flips dominates. GPU inference time was not

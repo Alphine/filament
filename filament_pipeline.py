@@ -5,8 +5,9 @@ Stage-B : connected components of the thresholded map become candidates; a crop
           refiner (smp.Unet, ResNet34) redraws every candidate's mask from a
           box-shaped seed.
 
-Everything here is inference-only. Weights live in the public Kaggle dataset
-`abukayyisahbasyid/filament-segmentation-2026-weights`.
+Everything here is inference-only. Weights (`unet_fold1..5.pt`, `refiner_best.pt`) are
+republished as a Kaggle dataset shortly before the submission deadline; see the
+repository README for the current status and SHA256 checksums.
 """
 
 from __future__ import annotations

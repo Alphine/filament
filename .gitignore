@@ -7,3 +7,4 @@ submission*.csv
 .env
 *access_token*
 *kaggle.json*
+weights_backup/
