@@ -27,7 +27,7 @@ def PQ(t):
 
 def gate():
     ema = {}
-    for p in glob.glob(f'{R}/ema_holdout_chunk*.json'):
+    for p in glob.glob(f'{R}/ema_*_chunk*.json'):
         d = json.load(open(p))
         assert d['status'] == 'done', p
         ema.update({r['name']: r['counts'] for r in d['holdout']})
@@ -51,7 +51,7 @@ def gate():
 
 def submission():
     rows, stems = [], set()
-    for p in sorted(glob.glob(f'{R}/ema_test_chunk*.json')):
+    for p in sorted(glob.glob(f'{R}/ema_*_chunk*.json')):
         d = json.load(open(p))
         assert d['status'] == 'done', p
         rows += d['rows']
