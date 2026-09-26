@@ -1,0 +1,41 @@
+{
+ "oof_with_refiner": {
+  "union": 0.3954,
+  "consensus": 0.4098,
+  "diff": 0.0144,
+  "ci95": [
+   0.0022,
+   0.0264
+  ],
+  "released_fold1": 0.394
+ },
+ "oof_without_refiner": {
+  "union": 0.3726,
+  "consensus": 0.3755,
+  "diff": 0.0029,
+  "ci95": [
+   -0.0095,
+   0.0152
+  ],
+  "released_fold1": 0.3697
+ },
+ "holdout_with_refiner": {
+  "union": 0.3924,
+  "consensus": 0.4079,
+  "diff": 0.0155,
+  "ci95": [
+   -0.0107,
+   0.0395
+  ]
+ },
+ "holdout_without_refiner": {
+  "union": 0.3707,
+  "consensus": 0.3688,
+  "diff": -0.0018,
+  "ci95": [
+   -0.0257,
+   0.0209
+  ]
+ },
+ "verdict": "GO: consensus beats union on the OOF images by the pre-set margin"
+}

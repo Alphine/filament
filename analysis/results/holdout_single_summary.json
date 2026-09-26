@@ -1,0 +1,63 @@
+{
+ "without_refiner": {
+  "per_fold": {
+   "1": {
+    "holdout": 0.4002,
+    "oof": 0.3697
+   },
+   "2": {
+    "holdout": 0.3686,
+    "oof": 0.3555
+   },
+   "3": {
+    "holdout": 0.4016,
+    "oof": 0.3622
+   },
+   "4": {
+    "holdout": 0.3768,
+    "oof": 0.3736
+   },
+   "5": {
+    "holdout": 0.3803,
+    "oof": 0.3755
+   }
+  },
+  "mean_single_holdout": 0.3855,
+  "holdout_effect": 0.0182,
+  "holdout_effect_ci95": [
+   -0.0145,
+   0.0463
+  ]
+ },
+ "with_refiner": {
+  "per_fold": {
+   "1": {
+    "holdout": 0.4221,
+    "oof": 0.394
+   },
+   "2": {
+    "holdout": 0.3871,
+    "oof": 0.3719
+   },
+   "3": {
+    "holdout": 0.4126,
+    "oof": 0.3728
+   },
+   "4": {
+    "holdout": 0.4034,
+    "oof": 0.3957
+   },
+   "5": {
+    "holdout": 0.4082,
+    "oof": 0.4073
+   }
+  },
+  "mean_single_holdout": 0.4067,
+  "holdout_effect": 0.0183,
+  "holdout_effect_ci95": [
+   -0.0167,
+   0.05
+  ]
+ },
+ "ensemble_effect_holdout": 0.0258
+}
