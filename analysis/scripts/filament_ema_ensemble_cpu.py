@@ -7,6 +7,7 @@ the production checkpoint rule out of fold (+0.0144, CI95 +0.009..+0.021). This 
 released pipeline with only stage-A swapped for the five EMA models (sel_fold{1..5}_ema.pt):
 5 models x 4-flip TTA, production candidate thresholds, released crop refiner.
 MODE=holdout runs only the hold-out (the submit gate), MODE=test only the test set.
+RULE selects the weights (default ema; prod = the production checkpoint rule of the same runs).
 Per chunk it writes ema_<mode>_chunk{i}.json: per-image official counts on its hold-out images (compared
 locally, paired, with the released ensemble's per-image counts) and the submission rows for its
 test images. Submit criterion fixed before the run: hold-out ensemble PQ >= released (paired).
@@ -32,12 +33,13 @@ import filament_metric as fm
 CHUNK_INDEX = int(os.environ.get("CHUNK_INDEX", "0"))
 CHUNK_TOTAL = int(os.environ.get("CHUNK_TOTAL", "5"))
 MODE = os.environ.get("MODE", "both")  # holdout | test | both
+RULE = os.environ.get("RULE", "ema")   # which weights of the checkpoint-selection runs: ema | prod | last | swa
 INPUT, OUT = "/kaggle/input", "/kaggle/working"
 t0 = time.time()
 weights = []
 for f in range(1, 6):
-    hits = glob.glob(f"{INPUT}/**/sel_fold{f}_ema.pt", recursive=True)
-    assert hits, f"EMA weights for fold {f} not found"
+    hits = glob.glob(f"{INPUT}/**/sel_fold{f}_{RULE}.pt", recursive=True)
+    assert hits, f"{RULE} weights for fold {f} not found"
     weights.append(hits[0])
 print("weights:", weights, flush=True)
 refiner_path = next(p for p in glob.glob(f"{INPUT}/**/refiner_best.pt", recursive=True))
@@ -52,12 +54,12 @@ hold = [n for k, n in enumerate(fm.holdout_names(list(per_file))) if k % CHUNK_T
 test_files = sorted(f for f in os.listdir(test_dir) if f.lower().endswith((".jpeg", ".jpg")))
 tests = [f for k, f in enumerate(test_files) if k % CHUNK_TOTAL == CHUNK_INDEX] if MODE != "holdout" else []
 print(f"chunk {CHUNK_INDEX}/{CHUNK_TOTAL}: {len(hold)} hold-out, {len(tests)} test images", flush=True)
-res = {"mode": MODE, "chunk_index": CHUNK_INDEX, "chunk_total": CHUNK_TOTAL, "weights": weights, "status": "running",
+res = {"rule": RULE, "mode": MODE, "chunk_index": CHUNK_INDEX, "chunk_total": CHUNK_TOTAL, "weights": weights, "status": "running",
        "holdout": [], "test_stems": [], "rows": []}
 
 
 def dump():
-    json.dump(res, open(f"{OUT}/ema_{MODE}_chunk{CHUNK_INDEX}.json", "w"))
+    json.dump(res, open(f"{OUT}/{RULE}_{MODE}_chunk{CHUNK_INDEX}.json", "w"))
 
 
 for n in hold:

@@ -1,0 +1,26 @@
+{
+ "ema_minus_prod": {
+  "diff": 0.0032,
+  "ci95": [
+   -0.0114,
+   0.0179
+  ]
+ },
+ "prod_minus_released": {
+  "diff": -0.0133,
+  "ci95": [
+   -0.0295,
+   0.0017
+  ]
+ },
+ "ema_minus_released": {
+  "diff": -0.0101,
+  "ci95": [
+   -0.0275,
+   0.0057
+  ]
+ },
+ "pq_released": 0.4325,
+ "pq_prod_new": 0.4191,
+ "pq_ema_new": 0.4223
+}
