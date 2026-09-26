@@ -72,6 +72,14 @@ class Log:
         json.dump(self.d, open(self.path, "w"), indent=1)
 
 
+def swa_avg(avg, cur, n):
+    """Equal-weight running mean for float tensors; integer buffers (BatchNorm's
+    num_batches_tracked) are copied -- torch 2.10's default SWA average rejects them."""
+    if not avg.is_floating_point():
+        return cur.detach().clone()
+    return avg + (cur.detach() - avg) / (n + 1)
+
+
 def plain_state(module):
     """state_dict of a model or of an AveragedModel's inner module, on CPU."""
     m = module.module if isinstance(module, AveragedModel) else module
@@ -138,7 +146,7 @@ def run_fold(fold, S):
         sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=tr.LR, total_steps=total, pct_start=0.25)
         scaler = torch.amp.GradScaler(enabled=True)
         ema = AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(EMA_DECAY), use_buffers=True)
-        swa = AveragedModel(model, use_buffers=True)
+        swa = AveragedModel(model, avg_fn=swa_avg, use_buffers=True)
         return model, opt, sched, scaler, ema, swa
 
     model, opt, sched, scaler, ema, swa = fresh()
