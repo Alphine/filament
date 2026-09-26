@@ -1,0 +1,32 @@
+{
+ "oof_with_refiner": {
+  "released": 0.3879,
+  "consensus": 0.3903,
+  "diff": 0.0023,
+  "ci95": [
+   -0.003,
+   0.0078
+  ]
+ },
+ "oof_without_refiner": {
+  "released": 0.367,
+  "consensus": 0.3607,
+  "diff": -0.0063,
+  "ci95": [
+   -0.0117,
+   -0.0007
+  ]
+ },
+ "holdout_ensemble": {
+  "released": 0.4325,
+  "consensus": 0.4174,
+  "diff": -0.015,
+  "ci95": [
+   -0.0287,
+   -0.003
+  ]
+ },
+ "criterion_oof": false,
+ "criterion_holdout": false,
+ "verdict": "DO NOT SUBMIT"
+}

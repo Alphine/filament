@@ -1,0 +1,10 @@
+{
+ "n_test_images": 180,
+ "n_rows": 1303,
+ "check": {
+  "rows": 1303,
+  "images_with_predictions": 177,
+  "images_without_predictions": 3
+ },
+ "seconds": 2127
+}

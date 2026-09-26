@@ -1,39 +1,42 @@
 """
-Solar Filament Segmentation 2026 -- consensus-target PILOT (Kaggle GPU), one arm per kernel.
+Solar Filament Segmentation 2026 -- consensus-target training (Kaggle GPU).
 
-Question: does training stage-A on a consensus target beat the pixel-union target?
-  ARM=union      control: exactly the production target (pixel union of all passes)
-  ARM=consensus  on multi-pass images keep only instances matched (IoU > 0.3) by an instance
-                 of at least one OTHER pass; single-pass images unchanged. Generalises the
-                 "inst_union_drop" constructor of analysis/scripts/filament_consensus_cpu.py,
-                 which scored +0.0145 PQ over the union in an annotation-only simulation.
+ARM=union      control: exactly the production target (pixel union of all passes)
+ARM=consensus  on multi-pass images keep only instances matched (IoU > 0.3) by an instance
+               of at least one OTHER pass; single-pass images unchanged. Generalises the
+               "inst_union_drop" constructor of analysis/scripts/filament_consensus_cpu.py,
+               which scored +0.0145 PQ over the union in an annotation-only simulation.
+FOLDS          comma-separated fold numbers trained one after another in this kernel
+               (the pilot used FOLDS=1 for both arms; the full run uses the consensus arm
+               for folds 2-5).
 
 Everything else is the production recipe of training/filament_unet_ensemble.py (imported,
-not copied): fold 1 of the same splits, ResNet34 U-Net, 30 epochs x 220 steps, batch 8,
-Tversky+BCE, AdamW + OneCycle 1e-4, checkpoint chosen every 5 epochs on 20 fold-val images.
-Both arms use the same torch seed, so their difference isolates the target (the data loader
-is already deterministic); ARM=union against the released unet_fold1.pt measures run-to-run
-noise.
+not copied): same splits, ResNet34 U-Net, 30 epochs x 220 steps, batch 8, Tversky+BCE,
+AdamW + OneCycle 1e-4, checkpoint chosen every 5 epochs on 20 fold-val images. Every
+fold starts from the same torch seed, so arms differ only in the target (the data loader
+is already deterministic).
 
-Evaluation (after training, same protocol as analysis/scripts/filament_oof_cpu.py): the best
-checkpoint alone with 4-flip TTA, production thresholds and the released crop refiner, scored
-per image on fold 1's 132 validation (out-of-fold) images and on the 50-image hold-out.
-Decision rule, fixed before the run: go to 5 folds only if consensus - union >= +0.005 on the
-OOF images with a paired bootstrap CI that excludes 0.
+Evaluation per fold (same protocol as analysis/scripts/filament_oof_cpu.py): the best
+checkpoint alone with 4-flip TTA, production thresholds and the released crop refiner,
+scored per image on the fold's validation (out-of-fold) images and on the 50-image hold-out.
 
 Compute safety:
   * FAIL FAST before training: the full evaluation path runs on one image, three training
-    steps run, and a checkpoint is saved and re-loaded (round trip).
-  * per-epoch checkpoint (model, optimiser, scheduler, scaler, best state) to
-    /kaggle/working/ckpt_<arm>.pt; if a ckpt_<arm>.pt is found under /kaggle/input (a
-    previous version attached as a source), training resumes from it.
-  * time budget: training stops early (keeping the best checkpoint) once TRAIN_BUDGET_S
-    is used, so evaluation and the outputs are always written.
+    steps run (timed), and a checkpoint is saved and re-loaded (round trip).
+  * per-epoch checkpoint (model, optimiser, scheduler, scaler, best) to
+    /kaggle/working/ckpt_<arm>_fold<F>.pt; if such a file is found under /kaggle/input (a
+    previous version attached as a source), that fold resumes from it; a fold whose
+    best_<arm>_fold<F>.pt and result JSON are already in /kaggle/input is skipped.
+  * time budget: training stops early (keeping the best checkpoint) when the kernel's
+    elapsed time would exceed TRAIN_BUDGET_S, so evaluation and outputs are always written.
+
+Outputs per fold: best_<arm>_fold<F>.pt (state_dict) and pilot_<arm>_fold<F>.json.
 """
 
 import glob
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -41,8 +44,8 @@ import time
 T_START = time.time()
 ARM = os.environ.get("ARM", "union")
 assert ARM in ("union", "consensus"), ARM
-FOLD = 1
-TRAIN_BUDGET_S = float(os.environ.get("TRAIN_BUDGET_S", str(4.5 * 3600)))
+FOLDS = [int(f) for f in os.environ.get("FOLDS", "1").split(",")]
+TRAIN_BUDGET_S = float(os.environ.get("TRAIN_BUDGET_S", str(10.5 * 3600)))
 SEED = 20260926
 
 try:
@@ -65,16 +68,20 @@ import filament_metric as fm
 OUT = "/kaggle/working"
 MASK_DIR = f"/kaggle/temp/masks_{ARM}"
 os.makedirs(MASK_DIR, exist_ok=True)
-CKPT = os.path.join(OUT, f"ckpt_{ARM}.pt")
-BEST = os.path.join(OUT, f"best_{ARM}.pt")
-RESULT = os.path.join(OUT, f"pilot_{ARM}.json")
-log = {"arm": ARM, "fold": FOLD, "seed": SEED, "events": []}
 
 
-def note(msg):
-    print(f"[{time.time() - T_START:7.0f}s] {msg}", flush=True)
-    log["events"].append([round(time.time() - T_START), msg])
-    json.dump(log, open(RESULT, "w"), indent=1)
+class Log:
+    def __init__(self, fold):
+        self.path = os.path.join(OUT, f"pilot_{ARM}_fold{fold}.json")
+        self.d = {"arm": ARM, "fold": fold, "seed": SEED, "events": []}
+
+    def note(self, msg):
+        print(f"[{time.time() - T_START:7.0f}s] fold{self.d['fold']} {msg}", flush=True)
+        self.d["events"].append([round(time.time() - T_START), msg])
+        self.save()
+
+    def save(self):
+        json.dump(self.d, open(self.path, "w"), indent=1)
 
 
 # ------------------------------------------------------------------ targets
@@ -87,6 +94,13 @@ def instance_rles(anns, h, w):
         r = mask_util.frPyObjects(seg, h, w)
         out.append(mask_util.merge(r) if isinstance(r, list) else r)
     return out
+
+
+def pass_union(pr, h, w):
+    flat = [r for rs in pr for r in rs]
+    if not flat:
+        return np.zeros((h, w), np.uint8)
+    return mask_util.decode(mask_util.merge(flat)).astype(np.uint8)
 
 
 def consensus_mask(passes, h, w, match_iou=0.3):
@@ -104,13 +118,6 @@ def consensus_mask(passes, h, w, match_iou=0.3):
     if not keep:
         return np.zeros((h, w), np.uint8)
     return mask_util.decode(mask_util.merge(keep)).astype(np.uint8)
-
-
-def pass_union(pr, h, w):
-    flat = [r for rs in pr for r in rs]
-    if not flat:
-        return np.zeros((h, w), np.uint8)
-    return mask_util.decode(mask_util.merge(flat)).astype(np.uint8)
 
 
 def build_targets(names, per_file, dims):
@@ -131,7 +138,7 @@ def build_targets(names, per_file, dims):
 
 
 # ------------------------------------------------------------------ evaluation (production protocol)
-def evaluate(weight_path, names, per_file_m, refiner, tag):
+def evaluate(weight_path, names, per_file_m, refiner, log, tag):
     device = fp.default_device()
     model = fp.load_stage_a([weight_path], device)
     rows = []
@@ -147,7 +154,7 @@ def evaluate(weight_path, names, per_file_m, refiner, tag):
                      "with_refiner": [float(a[0]), *map(int, a[1:])],
                      "without_refiner": [float(b[0]), *map(int, b[1:])]})
         if k % 25 == 0:
-            note(f"eval {tag}: {k}/{len(names)}")
+            log.note(f"eval {tag}: {k}/{len(names)}")
     return rows
 
 
@@ -157,45 +164,42 @@ def pooled_pq(rows, key):
     return float(t[0] / d) if d else 0.0
 
 
-# ------------------------------------------------------------------ main
-def main():
-    note(f"arm={ARM} device={tr.DEV} gpu={torch.cuda.get_device_name(0) if torch.cuda.is_available() else '-'}")
-    assert torch.cuda.is_available(), "no GPU -- refusing to train on CPU"
-    names, per_file, dims = tr.build_masks()          # union masks in tr.MASK_DIR (unused by the consensus arm)
-    per_file_m, _ = fm.load_annotations(tr.ANN, tr.TRAIN_IMG)
-    idx = np.random.default_rng(1234).permutation(len(names))
-    holdout = [names[i] for i in idx[:tr.N_VAL]]
-    pool = [names[i] for i in idx[tr.N_VAL:]]
-    assert holdout == fm.holdout_names(list(per_file_m)), "hold-out mismatch"
-    folds = np.array_split(np.random.default_rng(99).permutation(len(pool)), tr.N_FOLDS)
-    fv = [pool[i] for i in folds[FOLD - 1]]
-    ft = [pool[i] for i in np.concatenate([folds[j] for j in range(tr.N_FOLDS) if j != FOLD - 1])]
-    note(f"fold {FOLD}: train {len(ft)}, fold-val {len(fv)}, hold-out {len(holdout)}")
-
-    stats = build_targets(ft + fv, per_file, dims)
-    log["target_stats"] = stats
-    note(f"targets built: {stats} (target/union pixels = {stats['pixels_target'] / max(stats['pixels_union'], 1):.3f})")
-
-    refiner = fp.load_refiner(next(p for p in glob.glob("/kaggle/input/**/refiner_best.pt", recursive=True)), fp.default_device())
-    released = next(p for p in glob.glob(f"/kaggle/input/**/unet_fold{FOLD}.pt", recursive=True))
-
-    # ---------------- FAIL FAST (minutes, before any real training)
-    fast = evaluate(released, fv[:1], per_file_m, refiner, "fail-fast")
-    note(f"fail-fast eval OK on {fv[0]}: {fast[0]['with_refiner']}")
-    cache = {}
-    for fn in ft + fv:
-        img = cv2.imread(os.path.join(tr.TRAIN_IMG, fn), cv2.IMREAD_GRAYSCALE)
-        msk = cv2.imread(os.path.join(MASK_DIR, fn.rsplit(".", 1)[0] + ".png"), cv2.IMREAD_GRAYSCALE)
-        cache[fn] = (img, (msk > 127).astype(np.uint8))
-    note(f"RAM cache: {len(cache)} images")
-
+def fresh(ft_len_steps):
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     model = tr.UNet().to(tr.DEV)
     opt = torch.optim.AdamW(model.parameters(), lr=tr.LR, weight_decay=1e-4)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=tr.LR, total_steps=tr.EPOCHS * tr.STEPS_PER_EPOCH, pct_start=0.25)
+    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=tr.LR, total_steps=ft_len_steps, pct_start=0.25)
     scaler = torch.amp.GradScaler(enabled=True)
-    ds = tr.PatchDS(ft, tr.STEPS_PER_EPOCH, cache)
+    return model, opt, sched, scaler
+
+
+# ------------------------------------------------------------------ one fold
+def run_fold(fold, S):
+    log = Log(fold)
+    ckpt = os.path.join(OUT, f"ckpt_{ARM}_fold{fold}.pt")
+    best_path = os.path.join(OUT, f"best_{ARM}_fold{fold}.pt")
+    done_w = glob.glob(f"/kaggle/input/**/best_{ARM}_fold{fold}.pt", recursive=True)
+    done_j = glob.glob(f"/kaggle/input/**/pilot_{ARM}_fold{fold}.json", recursive=True)
+    if done_w and done_j and "oof_pq" in json.load(open(done_j[0])):
+        shutil.copy(done_w[0], best_path)
+        shutil.copy(done_j[0], log.path)
+        print(f"fold{fold}: already finished in an attached source -- copied, skipped", flush=True)
+        return
+
+    folds, pool = S["folds"], S["pool"]
+    fv = [pool[i] for i in folds[fold - 1]]
+    ft = [pool[i] for i in np.concatenate([folds[j] for j in range(tr.N_FOLDS) if j != fold - 1])]
+    log.d["target_stats"] = S["stats"]
+    log.note(f"train {len(ft)}, fold-val {len(fv)}, hold-out {len(S['holdout'])}")
+
+    released = next(p for p in glob.glob(f"/kaggle/input/**/unet_fold{fold}.pt", recursive=True))
+    fast = evaluate(released, fv[:1], S["per_file_m"], S["refiner"], log, "fail-fast")
+    log.note(f"fail-fast eval OK on {fv[0]}: {fast[0]['with_refiner']}")
+
+    total_steps = tr.EPOCHS * tr.STEPS_PER_EPOCH
+    model, opt, sched, scaler = fresh(total_steps)
+    ds = tr.PatchDS(ft, tr.STEPS_PER_EPOCH, S["cache"])
     ds.build_positions()
     dl = DataLoader(ds, batch_size=tr.BATCH, num_workers=2, pin_memory=True, drop_last=True, persistent_workers=True)
 
@@ -213,25 +217,26 @@ def main():
     def save_ckpt(ep_done, best):
         torch.save({"epoch": ep_done, "model": model.state_dict(), "opt": opt.state_dict(),
                     "sched": sched.state_dict(), "scaler": scaler.state_dict(), "best": best,
-                    "arm": ARM, "seed": SEED}, CKPT + ".tmp")
-        os.replace(CKPT + ".tmp", CKPT)
+                    "arm": ARM, "fold": fold, "seed": SEED}, ckpt + ".tmp")
+        os.replace(ckpt + ".tmp", ckpt)
 
-    # checkpoint round trip on an untrained copy (verifies save + load before spending GPU hours)
-    save_ckpt(0, (-1.0, -1, None))
-    rt = torch.load(CKPT, map_location="cpu", weights_only=False)
-    assert rt["arm"] == ARM and set(rt["model"]) == set(model.state_dict()), "checkpoint round trip failed"
-    note("checkpoint round trip OK")
+    save_ckpt(0, (-1.0, -1))
+    rt = torch.load(ckpt, map_location="cpu", weights_only=False)
+    assert rt["arm"] == ARM and rt["fold"] == fold and set(rt["model"]) == set(model.state_dict())
+    log.note("checkpoint round trip OK")
 
-    start_ep, best = 0, (-1.0, -1, None)
-    prev = [p for p in glob.glob(f"/kaggle/input/**/ckpt_{ARM}.pt", recursive=True)]
+    start_ep, best = 0, (-1.0, -1)
+    prev = glob.glob(f"/kaggle/input/**/ckpt_{ARM}_fold{fold}.pt", recursive=True)
+    prev_best = glob.glob(f"/kaggle/input/**/best_{ARM}_fold{fold}.pt", recursive=True)
     if prev:
         ck = torch.load(prev[0], map_location="cpu", weights_only=False)
         model.load_state_dict(ck["model"]); opt.load_state_dict(ck["opt"])
         sched.load_state_dict(ck["sched"]); scaler.load_state_dict(ck["scaler"])
-        start_ep, best = ck["epoch"], ck["best"]
-        note(f"RESUMED from {prev[0]} at epoch {start_ep} (best {best[0]:.4f} @ {best[1]})")
+        start_ep, best = ck["epoch"], tuple(ck["best"])[:2]
+        if prev_best:
+            shutil.copy(prev_best[0], best_path)
+        log.note(f"RESUMED from {prev[0]} at epoch {start_ep} (best {best[0]:.4f} @ {best[1]})")
     else:
-        # three real steps, timed, to estimate the run before committing to it
         model.train()
         t0 = time.time()
         it = iter(dl)
@@ -240,13 +245,8 @@ def main():
             step(x, y)
         torch.cuda.synchronize()
         del it
-        note(f"3 training steps OK ({(time.time() - t0) / 3:.2f}s/step incl. warm-up)")
-        # the smoke steps changed the weights and schedule: restart cleanly from the same seed
-        torch.manual_seed(SEED)
-        model = tr.UNet().to(tr.DEV)
-        opt = torch.optim.AdamW(model.parameters(), lr=tr.LR, weight_decay=1e-4)
-        sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=tr.LR, total_steps=tr.EPOCHS * tr.STEPS_PER_EPOCH, pct_start=0.25)
-        scaler = torch.amp.GradScaler(enabled=True)
+        log.note(f"3 training steps OK ({(time.time() - t0) / 3:.2f}s/step incl. warm-up)")
+        model, opt, sched, scaler = fresh(total_steps)   # the smoke steps changed the weights: restart cleanly
 
     quick = fv[:tr.VAL_QUICK]
     t_train = time.time()
@@ -258,44 +258,80 @@ def main():
             tot += step(x, y)
         if (ep + 1) % tr.VAL_EVERY == 0 or ep == tr.EPOCHS - 1:
             model.eval()
-            S = T = FP = FN = 0.0
+            s_sum = t_sum = fp_sum = fn_sum = 0.0
             for fn in quick:
                 g = cv2.imread(os.path.join(tr.TRAIN_IMG, fn), cv2.IMREAD_GRAYSCALE)
                 lab = tr.instances(tr.predict_prob(model, g), 0.4, 400, min_mean_prob=0.7)
-                s_, tp, fp_, fn_ = tr.pq_counts(lab, tr.val_gt(fn, per_file, dims))
-                S, T, FP, FN = S + s_, T + tp, FP + fp_, FN + fn_
-            v = tr.pq(S, T, FP, FN)
+                s_, tp, fp_, fn_ = tr.pq_counts(lab, tr.val_gt(fn, S["per_file"], S["dims"]))
+                s_sum, t_sum, fp_sum, fn_sum = s_sum + s_, t_sum + tp, fp_sum + fp_, fn_sum + fn_
+            v = tr.pq(s_sum, t_sum, fp_sum, fn_sum)
             if v > best[0]:
-                best = (v, ep + 1, None)
-                torch.save({k: t.detach().cpu().clone() for k, t in model.state_dict().items()}, BEST)
-            note(f"ep{ep + 1:2d} loss={tot / len(dl):.4f} foldval_PQ={v:.4f} best={best[0]:.4f}@{best[1]}")
+                best = (v, ep + 1)
+                torch.save({k: t.detach().cpu().clone() for k, t in model.state_dict().items()}, best_path)
+            log.note(f"ep{ep + 1:2d} loss={tot / len(dl):.4f} foldval_PQ={v:.4f} best={best[0]:.4f}@{best[1]}")
         else:
-            note(f"ep{ep + 1:2d} loss={tot / len(dl):.4f}")
+            log.note(f"ep{ep + 1:2d} loss={tot / len(dl):.4f}")
         save_ckpt(ep + 1, best)
         per_ep = (time.time() - t_train) / (ep + 1 - start_ep)
         if time.time() - T_START + per_ep > TRAIN_BUDGET_S and ep + 1 < tr.EPOCHS:
             stopped_early = True
-            note(f"TIME BUDGET: stopping after epoch {ep + 1} (best checkpoint kept)")
+            log.note(f"TIME BUDGET: stopping after epoch {ep + 1} (best checkpoint kept)")
             break
-    log["train"] = {"best_foldval_pq": best[0], "best_epoch": best[1], "stopped_early": stopped_early,
-                    "train_seconds": round(time.time() - t_train)}
+    log.d["train"] = {"best_foldval_pq": best[0], "best_epoch": best[1], "stopped_early": stopped_early,
+                      "train_seconds": round(time.time() - t_train)}
     del dl, ds
     torch.cuda.empty_cache()
-    if not os.path.exists(BEST):
-        raise SystemExit("no best checkpoint was saved")
+    if not os.path.exists(best_path):
+        raise SystemExit(f"fold {fold}: no best checkpoint was saved")
 
-    log["oof"] = evaluate(BEST, fv, per_file_m, refiner, "OOF")
-    log["holdout"] = evaluate(BEST, holdout, per_file_m, refiner, "hold-out")
+    log.d["oof"] = evaluate(best_path, fv, S["per_file_m"], S["refiner"], log, "OOF")
+    log.d["holdout"] = evaluate(best_path, S["holdout"], S["per_file_m"], S["refiner"], log, "hold-out")
     for part in ("oof", "holdout"):
-        log[f"{part}_pq"] = {k: round(pooled_pq(log[part], k), 4) for k in ("with_refiner", "without_refiner")}
-    note(f"DONE oof={log['oof_pq']} holdout={log['holdout_pq']}")
-    if os.path.exists(CKPT):
-        os.remove(CKPT)   # training finished: keep only the best weights in the output
+        log.d[f"{part}_pq"] = {k: round(pooled_pq(log.d[part], k), 4) for k in ("with_refiner", "without_refiner")}
+    log.note(f"DONE oof={log.d['oof_pq']} holdout={log.d['holdout_pq']}")
+    if os.path.exists(ckpt) and not stopped_early:
+        os.remove(ckpt)   # finished: keep only the best weights in the output
+
+
+# ------------------------------------------------------------------ main
+def main():
+    print(f"arm={ARM} folds={FOLDS} device={tr.DEV} "
+          f"gpu={torch.cuda.get_device_name(0) if torch.cuda.is_available() else '-'}", flush=True)
+    assert torch.cuda.is_available(), "no GPU -- refusing to train on CPU"
+    names, per_file, dims = tr.build_masks()
+    per_file_m, _ = fm.load_annotations(tr.ANN, tr.TRAIN_IMG)
+    idx = np.random.default_rng(1234).permutation(len(names))
+    holdout = [names[i] for i in idx[:tr.N_VAL]]
+    pool = [names[i] for i in idx[tr.N_VAL:]]
+    assert holdout == fm.holdout_names(list(per_file_m)), "hold-out mismatch"
+    folds = np.array_split(np.random.default_rng(99).permutation(len(pool)), tr.N_FOLDS)
+    stats = build_targets(pool, per_file, dims)
+    print(f"targets built for {len(pool)} pool images: {stats} "
+          f"(target/union pixels {stats['pixels_target'] / max(stats['pixels_union'], 1):.3f})", flush=True)
+    cache = {}
+    for fn in pool:
+        img = cv2.imread(os.path.join(tr.TRAIN_IMG, fn), cv2.IMREAD_GRAYSCALE)
+        msk = cv2.imread(os.path.join(MASK_DIR, fn.rsplit(".", 1)[0] + ".png"), cv2.IMREAD_GRAYSCALE)
+        cache[fn] = (img, (msk > 127).astype(np.uint8))
+    refiner = fp.load_refiner(next(p for p in glob.glob("/kaggle/input/**/refiner_best.pt", recursive=True)),
+                              fp.default_device())
+    S = dict(per_file=per_file, dims=dims, per_file_m=per_file_m, holdout=holdout, pool=pool, folds=folds,
+             stats=stats, cache=cache, refiner=refiner)
+    failed = []
+    for fold in FOLDS:
+        try:
+            run_fold(fold, S)
+        except Exception as e:  # keep the other folds going; record the error in that fold's JSON
+            print(f"fold{fold} ERROR {type(e).__name__}: {e}", flush=True)
+            p = os.path.join(OUT, f"pilot_{ARM}_fold{fold}.json")
+            d = json.load(open(p)) if os.path.exists(p) else {"arm": ARM, "fold": fold, "events": []}
+            d["error"] = f"{type(e).__name__}: {e}"
+            json.dump(d, open(p, "w"), indent=1)
+            failed.append(fold)
+            torch.cuda.empty_cache()
+    if failed:
+        raise SystemExit(f"folds failed: {failed}")
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:  # keep whatever was logged/checkpointed in the output
-        note(f"ERROR {type(e).__name__}: {e}")
-        raise
+    main()
