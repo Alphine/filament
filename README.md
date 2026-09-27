@@ -5,15 +5,18 @@ Instance segmentation of solar filaments in H-alpha images (MAGFiLO) for the IEE
 
 | | |
 |---|---|
-| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4325** (bootstrap SE 0.017) |
-| **Public leaderboard PQ** | **0.36** |
+| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4384** with the near-limb filter, 0.4325 without (bootstrap SE 0.017) |
+| Out-of-fold PQ (657 images, one fold model per image) | 0.394 with the near-limb filter, 0.388 without (SE 0.005) |
+| **Public leaderboard PQ** | **0.36** (with and without the filter) |
 | Annotator-vs-annotator PQ on the training data (same rule) | 0.34 |
 | Weights | Not currently published (see note below); Apache-2.0 |
 
 ## Method in one paragraph
 A 5-fold ResNet34 U-Net ensemble with dihedral TTA produces a probability map (stage-A). Connected
 components of `prob > 0.4` (area 400-40000 px, mean prob >= 0.7) become candidates. A crop refiner
-(`smp.Unet`, ResNet34) redraws each candidate's mask from a box-shaped seed; one mask is one
+(`smp.Unet`, ResNet34) redraws each candidate's mask from a box-shaped seed. Finally, instances whose
+centroid lies beyond 0.88 of the solar-disk radius (disk from an Otsu threshold) are dropped, which
+removes near-limb false positives (`Pipeline(limb_drop=None)` turns this off). One mask is one
 submission row. Details, ablations and negative results are in [`report/report.md`](report/report.md).
 
 ## Repository layout
@@ -54,7 +57,8 @@ data, then set `FILAMENT_WEIGHTS` (folder with `unet_fold1..5.pt`, `refiner_best
 the notebook from this folder.
 
 `MAX_TEST_IMAGES` limits the run for a smoke test; `EVAL_HOLDOUT_IMAGES = 50` scores the hold-out
-with the official PQ (expected 0.4325 up to CPU/GPU floating-point noise, about +-0.002).
+with the official PQ (expected 0.4384, or 0.4325 with `limb_drop=None`, up to CPU/GPU floating-point
+noise, about +-0.002).
 Checksums of every weight file are in `SHA256SUMS.txt` below.
 
 Measured cost: about 3 minutes per image on the 4-core Kaggle CPU when one notebook runs alone (up to

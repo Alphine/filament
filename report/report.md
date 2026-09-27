@@ -19,6 +19,8 @@ We segment solar filaments in H-alpha images with a two-stage pipeline: a five-f
 
 **Crop refiner.** For each candidate a square crop (1.5x the longest bounding-box side, min 96 px) is resized to 512x512 and fed as `[crop, CLAHE(crop) [7], seed]`, where the seed is the bounding box padded by 40% (during training the pad is drawn from 20-60%). A `smp.Unet(resnet34)` [8] predicts the mask (threshold 0.5). Training uses every annotator instance as one sample (6,474 crops) with the seed box jittered (shift +-15%, scale 0.85-1.25) so the network cannot memorise the exact box; loss 0.45 BCE + 0.55 soft Dice, 13 epochs. Using the real mask as seed at training time makes the refiner copy its input and fail at test time.
 
+**Near-limb filter (added 27 Sep 2026).** The solar disk is estimated per image (Otsu threshold, largest component, holes filled, radius from its area), and every final instance whose centroid lies beyond 0.88 of the disk radius is dropped (`filament_pipeline.drop_near_limb`, on by default; `Pipeline(limb_drop=None)` restores the earlier pipeline). The threshold was chosen out of fold on 657 images (+0.0065 PQ), and the hold-out rises from 0.4325 to 0.4384 (section 3).
+
 ## 3. Results
 | Configuration | Hold-out PQ | Public LB |
 |---|---|---|

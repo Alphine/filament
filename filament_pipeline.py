@@ -4,6 +4,8 @@ Stage-A : 5-fold ResNet34 U-Net ensemble, dihedral TTA, sliding window -> probab
 Stage-B : connected components of the thresholded map become candidates; a crop
           refiner (smp.Unet, ResNet34) redraws every candidate's mask from a
           box-shaped seed.
+Limb    : instances whose centroid lies beyond 0.88 of the solar-disk radius are
+          dropped (near-limb false positives; see report).
 
 Everything here is inference-only. Weights (`unet_fold1..5.pt`, `refiner_best.pt`) are
 republished as a Kaggle dataset shortly before the submission deadline; see the
@@ -41,6 +43,10 @@ REFINE_SEED_PAD = 0.40   # seed box = bbox padded by 40 % of its size
 REFINE_THR = 0.50
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], np.float32)[:, None, None]
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], np.float32)[:, None, None]
+
+# near-limb filter: drop instances whose centroid is beyond LIMB_DROP_T * disk radius
+# (chosen out of fold: +0.0065 PQ on 657 images, +0.0059 on the hold-out; see report)
+LIMB_DROP_T = 0.88
 
 # dihedral TTA: (name, forward transform); every transform used here is its own inverse
 TTA = (
@@ -255,17 +261,44 @@ def refine_candidates(gray: np.ndarray, candidates: np.ndarray, refiner: nn.Modu
     return out
 
 
+# ---------------------------------------------------------------- near-limb filter
+def estimate_disk(gray: np.ndarray) -> tuple[float, float, float]:
+    """Solar disk (centre x, centre y, radius) from an Otsu threshold: largest component,
+    holes (dark filaments, sunspots) filled, radius from its area."""
+    _, b = cv2.threshold(gray, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, lab, st, _ = cv2.connectedComponentsWithStats(b.astype(np.uint8), connectivity=8)
+    m = (lab == 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))).astype(np.uint8)
+    ff = m.copy()
+    cv2.floodFill(ff, np.zeros((m.shape[0] + 2, m.shape[1] + 2), np.uint8), (0, 0), 1)
+    m = m | (1 - ff)
+    ys, xs = np.nonzero(m)
+    return float(xs.mean()), float(ys.mean()), float(np.sqrt(m.sum() / np.pi))
+
+
+def drop_near_limb(labels: np.ndarray, gray: np.ndarray, t: float = LIMB_DROP_T) -> np.ndarray:
+    """Remove every instance whose centroid lies farther than t * disk radius from the disk centre."""
+    cx, cy, r = estimate_disk(gray)
+    out = labels.copy()
+    for i in range(1, int(labels.max()) + 1):
+        ys, xs = np.nonzero(labels == i)
+        if xs.size and math.hypot(xs.mean() - cx, ys.mean() - cy) / r > t:
+            out[labels == i] = 0
+    return out
+
+
 # ------------------------------------------------------------------ end-to-end API
 @dataclass
 class Pipeline:
     stage_a: list[nn.Module]
     refiner: nn.Module
     device: torch.device
+    limb_drop: float | None = LIMB_DROP_T   # None disables the near-limb filter
 
     def segment(self, gray: np.ndarray) -> np.ndarray:
         """uint8 grayscale image -> instance label map (0 = background)."""
         prob = predict_ensemble(self.stage_a, gray, self.device)
-        return refine_candidates(gray, extract_candidates(prob), self.refiner, self.device)
+        labels = refine_candidates(gray, extract_candidates(prob), self.refiner, self.device)
+        return drop_near_limb(labels, gray, self.limb_drop) if self.limb_drop is not None else labels
 
 
 def label_map_to_rles(labels: np.ndarray) -> list[str]:
