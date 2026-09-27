@@ -1,0 +1,30 @@
+{
+ "folds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "with_refiner": {
+  "baseline": 0.3998,
+  "spine": 0.4015,
+  "diff": 0.0016,
+  "ci95": [
+   -0.0037,
+   0.0069
+  ],
+  "n": 557
+ },
+ "without_refiner": {
+  "baseline": 0.3639,
+  "spine": 0.3713,
+  "diff": 0.0074,
+  "ci95": [
+   0.0024,
+   0.0125
+  ],
+  "n": 557
+ },
+ "verdict": "NOT ACTIONABLE"
+}
