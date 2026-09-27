@@ -1,0 +1,64 @@
+{
+ "holdout_pq": {
+  "base": 0.4325,
+  "strict": 0.4178,
+  "loose": 0.416,
+  "shrink": 0.2698,
+  "grow": 0.3191
+ },
+ "holdout_tp_fp_fn": {
+  "base": [
+   400,
+   239,
+   211
+  ],
+  "strict": [
+   324,
+   127,
+   287
+  ],
+  "loose": [
+   410,
+   300,
+   201
+  ],
+  "shrink": [
+   271,
+   368,
+   340
+  ],
+  "grow": [
+   321,
+   318,
+   290
+  ]
+ },
+ "test": {
+  "base": {
+   "rows": 1347,
+   "images_with_predictions": 177,
+   "images_without_predictions": 3
+  },
+  "strict": {
+   "rows": 972,
+   "images_with_predictions": 175,
+   "images_without_predictions": 5
+  },
+  "loose": {
+   "rows": 1520,
+   "images_with_predictions": 177,
+   "images_without_predictions": 3
+  },
+  "shrink": {
+   "rows": 1347,
+   "images_with_predictions": 177,
+   "images_without_predictions": 3
+  },
+  "grow": {
+   "rows": 1347,
+   "images_with_predictions": 177,
+   "images_without_predictions": 3
+  }
+ },
+ "seconds": 2443
+}
