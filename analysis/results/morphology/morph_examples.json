@@ -1,0 +1,398 @@
+{
+ "counts": {
+  "match": 258,
+  "near-miss": 68,
+  "complex": 258,
+  "missed": 93,
+  "limb-drop": 30,
+  "phantom": 41,
+  "fragmented": 17,
+  "limb-drop_false_positive": 24,
+  "limb-drop_true_positive": 6
+ },
+ "overview": [
+  "20131013185334Ch.jpeg",
+  "20140908231334Lh.jpeg",
+  "20160726135354Bh.jpeg"
+ ],
+ "chosen": {
+  "complex": [
+   {
+    "cat": "complex",
+    "iou": 0.6301485482781904,
+    "pred": [
+     5
+    ],
+    "gt": [
+     6
+    ],
+    "solidity": 0.09407013074670412,
+    "name": "20171123133730Ch.jpeg"
+   },
+   {
+    "cat": "complex",
+    "iou": 0.6630342963338401,
+    "pred": [
+     7
+    ],
+    "gt": [
+     2
+    ],
+    "solidity": 0.1698102091486765,
+    "name": "20150228082414Th.jpeg"
+   },
+   {
+    "cat": "complex",
+    "iou": 0.5804480651731161,
+    "pred": [
+     3
+    ],
+    "gt": [
+     10
+    ],
+    "solidity": 0.20762924544085662,
+    "name": "20140420085614Th.jpeg"
+   },
+   {
+    "cat": "complex",
+    "iou": 0.7000385059684251,
+    "pred": [
+     1
+    ],
+    "gt": [
+     1
+    ],
+    "solidity": 0.2106391380380211,
+    "name": "20160315133714Th.jpeg"
+   },
+   {
+    "cat": "complex",
+    "iou": 0.5060180541624875,
+    "pred": [
+     5
+    ],
+    "gt": [
+     3
+    ],
+    "solidity": 0.22445266185361273,
+    "name": "20110826074214Th.jpeg"
+   },
+   {
+    "cat": "complex",
+    "iou": 0.5931184128952263,
+    "pred": [
+     0
+    ],
+    "gt": [
+     3
+    ],
+    "solidity": 0.23204137666815658,
+    "name": "20150620082014Th.jpeg"
+   }
+  ],
+  "near-miss": [
+   {
+    "cat": "near-miss",
+    "iou": 0.5,
+    "pred": [
+     3
+    ],
+    "gt": [
+     3
+    ],
+    "name": "20160402025254Uh.jpeg"
+   },
+   {
+    "cat": "near-miss",
+    "iou": 0.4980289093298292,
+    "pred": [
+     3
+    ],
+    "gt": [
+     5
+    ],
+    "name": "20110619063134Lh.jpeg"
+   },
+   {
+    "cat": "near-miss",
+    "iou": 0.49756394640682094,
+    "pred": [
+     3
+    ],
+    "gt": [
+     9
+    ],
+    "name": "20120610175114Mh.jpeg"
+   },
+   {
+    "cat": "near-miss",
+    "iou": 0.496,
+    "pred": [
+     4
+    ],
+    "gt": [
+     5
+    ],
+    "name": "20171027223030Lh.jpeg"
+   },
+   {
+    "cat": "near-miss",
+    "iou": 0.4934210526315789,
+    "pred": [
+     4
+    ],
+    "gt": [
+     5
+    ],
+    "name": "20171123133730Ch.jpeg"
+   },
+   {
+    "cat": "near-miss",
+    "iou": 0.483397463303406,
+    "pred": [
+     2
+    ],
+    "gt": [
+     0
+    ],
+    "name": "20160604163414Mh.jpeg"
+   }
+  ],
+  "phantom": [
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     0
+    ],
+    "gt": [],
+    "name": "20110619063134Lh.jpeg"
+   },
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     9
+    ],
+    "gt": [],
+    "name": "20110619063134Lh.jpeg"
+   },
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     1
+    ],
+    "gt": [],
+    "name": "20111115063134Lh.jpeg"
+   },
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     9
+    ],
+    "gt": [],
+    "name": "20111115063134Lh.jpeg"
+   },
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     0
+    ],
+    "gt": [],
+    "name": "20120803102114Th.jpeg"
+   },
+   {
+    "cat": "phantom",
+    "iou": 0.0,
+    "pred": [
+     6
+    ],
+    "gt": [],
+    "name": "20120803102114Th.jpeg"
+   }
+  ],
+  "missed": [
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     6
+    ],
+    "name": "20110619063134Lh.jpeg"
+   },
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     1
+    ],
+    "name": "20110625163814Mh.jpeg"
+   },
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     2
+    ],
+    "name": "20110625163814Mh.jpeg"
+   },
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     4
+    ],
+    "name": "20110625163814Mh.jpeg"
+   },
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     7
+    ],
+    "name": "20111115063134Lh.jpeg"
+   },
+   {
+    "cat": "missed",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [
+     4
+    ],
+    "name": "20120424072414Th.jpeg"
+   }
+  ],
+  "fragmented": [
+   {
+    "cat": "fragmented",
+    "iou": 0.23943399739340904,
+    "pred": [
+     5,
+     6
+    ],
+    "gt": [
+     0
+    ],
+    "name": "20171027223030Lh.jpeg"
+   },
+   {
+    "cat": "fragmented",
+    "iou": 0.4111111111111111,
+    "pred": [
+     0,
+     1
+    ],
+    "gt": [
+     3
+    ],
+    "name": "20110625163814Mh.jpeg"
+   },
+   {
+    "cat": "fragmented",
+    "iou": 0.483397463303406,
+    "pred": [
+     2,
+     4
+    ],
+    "gt": [
+     0
+    ],
+    "name": "20160604163414Mh.jpeg"
+   },
+   {
+    "cat": "fragmented",
+    "iou": 0.42535392535392536,
+    "pred": [
+     0,
+     1
+    ],
+    "gt": [
+     5
+    ],
+    "name": "20160604163414Mh.jpeg"
+   },
+   {
+    "cat": "fragmented",
+    "iou": 0.5277011041009464,
+    "pred": [
+     0,
+     1
+    ],
+    "gt": [
+     9
+    ],
+    "name": "20150228082414Th.jpeg"
+   },
+   {
+    "cat": "fragmented",
+    "iou": 0.31296296296296294,
+    "pred": [
+     4,
+     5
+    ],
+    "gt": [
+     7
+    ],
+    "name": "20140420085614Th.jpeg"
+   }
+  ],
+  "limb-drop": [
+   {
+    "cat": "limb-drop",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [],
+    "name": "20131013185334Ch.jpeg"
+   },
+   {
+    "cat": "limb-drop",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [],
+    "name": "20140908231334Lh.jpeg"
+   },
+   {
+    "cat": "limb-drop",
+    "iou": 0.0,
+    "pred": [],
+    "gt": [],
+    "name": "20140908231334Lh.jpeg"
+   },
+   {
+    "cat": "limb-drop",
+    "iou": 0.7743277848911652,
+    "pred": [],
+    "gt": [
+     7
+    ],
+    "name": "20140712195854Bh.jpeg"
+   },
+   {
+    "cat": "limb-drop",
+    "iou": 0.7554283458349783,
+    "pred": [],
+    "gt": [
+     4
+    ],
+    "name": "20160927133734Ch.jpeg"
+   },
+   {
+    "cat": "limb-drop",
+    "iou": 0.7253711201079622,
+    "pred": [],
+    "gt": [
+     7
+    ],
+    "name": "20120829063134Lh.jpeg"
+   }
+  ]
+ }
+}
