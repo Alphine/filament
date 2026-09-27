@@ -1,0 +1,89 @@
+{
+ "rules": {
+  "drop@0.9": {
+   "oof_diff": 0.0059,
+   "ci95": [
+    0.0043,
+    0.0075
+   ],
+   "holdout_diff": 0.0052
+  },
+  "clip@0.9": {
+   "oof_diff": -0.0082,
+   "ci95": [
+    -0.0106,
+    -0.0059
+   ],
+   "holdout_diff": -0.0072
+  },
+  "drop@0.93": {
+   "oof_diff": 0.0023,
+   "ci95": [
+    0.0016,
+    0.003
+   ],
+   "holdout_diff": 0.0022
+  },
+  "clip@0.93": {
+   "oof_diff": -0.0023,
+   "ci95": [
+    -0.0033,
+    -0.0013
+   ],
+   "holdout_diff": -0.0048
+  },
+  "drop@0.95": {
+   "oof_diff": 0.001,
+   "ci95": [
+    0.0006,
+    0.0015
+   ],
+   "holdout_diff": 0.0
+  },
+  "clip@0.95": {
+   "oof_diff": -0.0008,
+   "ci95": [
+    -0.0015,
+    -0.0004
+   ],
+   "holdout_diff": -0.0017
+  },
+  "drop@0.97": {
+   "oof_diff": 0.0001,
+   "ci95": [
+    0.0,
+    0.0002
+   ],
+   "holdout_diff": 0.0
+  },
+  "clip@0.97": {
+   "oof_diff": -0.0001,
+   "ci95": [
+    -0.0003,
+    -0.0
+   ],
+   "holdout_diff": -0.0004
+  },
+  "drop@1.0": {
+   "oof_diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "holdout_diff": 0.0
+  },
+  "clip@1.0": {
+   "oof_diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "holdout_diff": 0.0
+  }
+ },
+ "base_oof": 0.3879,
+ "base_holdout": 0.4325,
+ "cv_mean_gain": 0.0058,
+ "best_rule": "drop@0.9",
+ "verdict": "ACTIONABLE: drop@0.9"
+}
