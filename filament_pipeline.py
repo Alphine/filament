@@ -226,9 +226,9 @@ def square_bounds(bbox_xywh, h: int, w: int) -> tuple[int, int, int, int]:
     return max(0, x0), max(0, y0), x1, y1
 
 
-def seed_box(h: int, w: int, bbox_xywh) -> np.ndarray:
+def seed_box(h: int, w: int, bbox_xywh, pad: float = REFINE_SEED_PAD) -> np.ndarray:
     x, y, bw, bh = bbox_xywh
-    px, py = bw * REFINE_SEED_PAD, bh * REFINE_SEED_PAD
+    px, py = bw * pad, bh * pad
     x0, y0 = max(0, int(x - px)), max(0, int(y - py))
     x1, y1 = min(w, int(x + bw + px)), min(h, int(y + bh + py))
     seed = np.zeros((h, w), np.uint8)
@@ -237,27 +237,36 @@ def seed_box(h: int, w: int, bbox_xywh) -> np.ndarray:
 
 
 @torch.no_grad()
+def refiner_prob(gray: np.ndarray, bbox_xywh, refiner: nn.Module, device: torch.device,
+                 seed_pad: float = REFINE_SEED_PAD, flip: bool = False) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+    """Refiner probability of one candidate box on its REFINE_CROP x REFINE_CROP crop, and the crop's
+    bounds (x0, y0, x1, y1) in the image. `flip` runs the refiner on the left-right mirrored crop and
+    mirrors the result back (used only for the scorer's stability features)."""
+    h, w = gray.shape
+    seed = seed_box(h, w, bbox_xywh, seed_pad)
+    x0, y0, x1, y1 = square_bounds(bbox_xywh, h, w)
+    cs = REFINE_CROP
+    img = cv2.resize(gray[y0:y1, x0:x1], (cs, cs), interpolation=cv2.INTER_LINEAR)
+    sd = cv2.resize(seed[y0:y1, x0:x1], (cs, cs), interpolation=cv2.INTER_NEAREST)
+    x = np.stack([img, cv2.createCLAHE(2.0, (8, 8)).apply(img), sd * 255], 0).astype(np.float32) / 255.0
+    x = (x - IMAGENET_MEAN) / IMAGENET_STD
+    if flip:
+        x = np.ascontiguousarray(x[:, :, ::-1])
+    prob = torch.sigmoid(refiner(torch.from_numpy(x)[None].to(device))).float().cpu().numpy()[0, 0]
+    return (np.ascontiguousarray(prob[:, ::-1]) if flip else prob), (x0, y0, x1, y1)
+
+
 def refine_candidates(gray: np.ndarray, candidates: np.ndarray, refiner: nn.Module,
                       device: torch.device | None = None) -> np.ndarray:
     """Redraw every candidate with the crop refiner; returns a label map with the same ids."""
     device = device or default_device()
-    h, w = gray.shape
     out = np.zeros_like(candidates)
-    clahe = cv2.createCLAHE(2.0, (8, 8))
     for i in range(1, int(candidates.max()) + 1):
         box = _bbox(candidates == i)
         if box is None:
             continue
         y0_, y1_, x0_, x1_ = box
-        bbox = [x0_, y0_, x1_ - x0_, y1_ - y0_]
-        seed = seed_box(h, w, bbox)
-        x0, y0, x1, y1 = square_bounds(bbox, h, w)
-        cs = REFINE_CROP
-        img = cv2.resize(gray[y0:y1, x0:x1], (cs, cs), interpolation=cv2.INTER_LINEAR)
-        sd = cv2.resize(seed[y0:y1, x0:x1], (cs, cs), interpolation=cv2.INTER_NEAREST)
-        x = np.stack([img, clahe.apply(img), sd * 255], 0).astype(np.float32) / 255.0
-        x = torch.from_numpy((x - IMAGENET_MEAN) / IMAGENET_STD)[None].to(device)
-        prob = torch.sigmoid(refiner(x)).float().cpu().numpy()[0, 0]
+        prob, (x0, y0, x1, y1) = refiner_prob(gray, [x0_, y0_, x1_ - x0_, y1_ - y0_], refiner, device)
         crop_mask = (prob > REFINE_THR).astype(np.uint8)
         full = cv2.resize(crop_mask, (x1 - x0, y1 - y0), interpolation=cv2.INTER_NEAREST)
         out[y0:y1, x0:x1][full.astype(bool)] = i

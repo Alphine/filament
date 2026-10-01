@@ -138,3 +138,34 @@ class InstanceScorer:
         inst, _ = image_instances(gray, labels, candidates, quantise(prob))
         drop = [r["id"] for r, v in zip(inst, self.scores(inst)) if v < self.tau]
         return np.where(np.isin(labels, drop), 0, labels) if drop else labels
+
+
+def _iou(a: np.ndarray, b: np.ndarray) -> float:
+    u = int((a | b).sum())
+    return float((a & b).sum() / u) if u else 0.0
+
+
+def refiner_features(gray: np.ndarray, candidates: np.ndarray, ids: list[int], refiner, device) -> dict[int, dict]:
+    """Refiner-confidence and mask-stability features per instance id (study features, not part of the
+    released scorer): statistics of the refiner probability inside the mask, and how much the mask
+    changes when the refiner sees the mirrored crop or a smaller / larger seed box."""
+    out = {}
+    objs = ndimage.find_objects(candidates)
+    for i in ids:
+        sl = objs[i - 1]
+        bbox = [sl[1].start, sl[0].start, sl[1].stop - sl[1].start, sl[0].stop - sl[0].start]
+        p, _ = fp.refiner_prob(gray, bbox, refiner, device)
+        m = p > fp.REFINE_THR
+        f = {"ref_mean_p": float(p[m].mean()) if m.any() else 0.0, "ref_p10_p": float(np.percentile(p[m], 10)) if m.any() else 0.0,
+             "ref_max_p": float(p.max()), "ref_band": float(((p > 0.3) & (p < 0.7)).sum() / max(int(m.sum()), 1)),
+             "ref_area_70_30": float((p > 0.7).sum() / max(int((p > 0.3).sum()), 1))}
+        pf, _ = fp.refiner_prob(gray, bbox, refiner, device, flip=True)
+        ps, _ = fp.refiner_prob(gray, bbox, refiner, device, seed_pad=0.2)
+        pl, _ = fp.refiner_prob(gray, bbox, refiner, device, seed_pad=0.6)
+        ious = [_iou(m, q > fp.REFINE_THR) for q in (pf, ps, pl)]
+        mean_p = (p + pf + ps + pl) / 4
+        f.update({"ref_iou_flip": ious[0], "ref_iou_seed20": ious[1], "ref_iou_seed60": ious[2], "ref_iou_min": min(ious),
+                  "ref_absdiff_flip": float(np.abs(p - pf)[m | (pf > fp.REFINE_THR)].mean()) if (m | (pf > fp.REFINE_THR)).any() else 0.0,
+                  "ref_iou_mean4": _iou(m, mean_p > fp.REFINE_THR)})
+        out[i] = f
+    return out
