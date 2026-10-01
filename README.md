@@ -5,9 +5,9 @@ Instance segmentation of solar filaments in H-alpha images (MAGFiLO) for the IEE
 
 | | |
 |---|---|
-| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4384** with the near-limb filter, 0.4325 without (bootstrap SE 0.017) |
-| Out-of-fold PQ (657 images, one fold model per image) | 0.394 with the near-limb filter, 0.388 without (SE 0.005) |
-| **Public leaderboard PQ** | **0.36** (with and without the filter) |
+| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4427** full pipeline; 0.4384 without the instance scorer; 0.4325 also without the near-limb filter (bootstrap SE 0.017) |
+| Out-of-fold PQ (657 images, one fold model per image) | 0.409 full pipeline (scorer cross-validated by image); 0.394 without the scorer; 0.388 also without the near-limb filter (SE 0.005) |
+| **Public leaderboard PQ** | **0.37** (0.36 without the instance scorer) |
 | Annotator-vs-annotator PQ on the training data (same rule) | 0.34 |
 | Weights | Not currently published (see note below); Apache-2.0 |
 
@@ -16,13 +16,17 @@ A 5-fold ResNet34 U-Net ensemble with dihedral TTA produces a probability map (s
 components of `prob > 0.4` (area 400-40000 px, mean prob >= 0.7) become candidates. A crop refiner
 (`smp.Unet`, ResNet34) redraws each candidate's mask from a box-shaped seed. Finally, instances whose
 centroid lies beyond 0.88 of the solar-disk radius (disk from an Otsu threshold) are dropped, which
-removes near-limb false positives (`Pipeline(limb_drop=None)` turns this off). One mask is one
-submission row. Details, ablations and negative results are in [`report/report.md`](report/report.md).
+removes near-limb false positives (`Pipeline(limb_drop=None)` turns this off). Finally a learned
+instance scorer (LightGBM on 36 inference-time features, fitted on 4,694 out-of-fold instances)
+predicts each instance's expected matched IoU and drops those below the PQ break-even, PQ/2 = 0.197
+(`Pipeline(scorer=None)` turns this off). One mask is one submission row. Details, ablations and negative results are in [`report/report.md`](report/report.md).
 
 ## Repository layout
 ```
 pipeline.ipynb            end-to-end notebook: load weights -> (optional hold-out PQ) -> test predictions -> submission.csv
-filament_pipeline.py      inference code (models, TTA, candidates, refiner, RLE, format validation)
+filament_pipeline.py      inference code (models, TTA, candidates, refiner, near-limb filter, RLE, format validation)
+filament_scorer.py        learned instance scorer: instance features and the keep/drop rule
+models/                   the fitted scorer (LightGBM text model, feature list and threshold)
 filament_metric.py        the official PQ, per annotator pass; fixed hold-out split
 requirements.txt          pinned versions taken from the Kaggle image used for all runs
 training/                 the two Kaggle GPU scripts that produced the weights
@@ -47,8 +51,8 @@ be re-published as a Kaggle dataset before the deadline, with this README update
 ## Reproduce the submission
 **On Kaggle (recommended, once the weights dataset is re-published).** Create a notebook from
 `pipeline.ipynb`, attach (1) the weights dataset and (2) the competition data, enable a GPU (T4) and
-internet (only to `pip install segmentation-models-pytorch==0.5.0`), copy `filament_pipeline.py` and
-`filament_metric.py` next to the notebook, and run all cells. `submission.csv` is written to
+internet (only to `pip install segmentation-models-pytorch==0.5.0`), copy `filament_pipeline.py`,
+`filament_scorer.py`, `filament_metric.py` and the `models/` folder next to the notebook, and run all cells. `submission.csv` is written to
 `/kaggle/working`.
 
 **Locally.** `pip install -r requirements.txt`, obtain the weights (see above) and the competition
@@ -57,8 +61,8 @@ data, then set `FILAMENT_WEIGHTS` (folder with `unet_fold1..5.pt`, `refiner_best
 the notebook from this folder.
 
 `MAX_TEST_IMAGES` limits the run for a smoke test; `EVAL_HOLDOUT_IMAGES = 50` scores the hold-out
-with the official PQ (expected 0.4384, or 0.4325 with `limb_drop=None`, up to CPU/GPU floating-point
-noise, about +-0.002).
+with the official PQ (expected 0.4427; 0.4384 with `scorer=None`; 0.4325 with `scorer=None,
+limb_drop=None`; up to CPU/GPU floating-point noise, about +-0.002).
 Checksums of every weight file are in `SHA256SUMS.txt` below.
 
 Measured cost: about 3 minutes per image on the 4-core Kaggle CPU when one notebook runs alone (up to
@@ -68,7 +72,9 @@ measured.
 **Validation.** `pipeline.ipynb` was run on Kaggle (CPU) from the public weights dataset: on the first 3
 hold-out images it reproduced the per-image official TP/FP/FN and summed IoU of our earlier runs
 exactly, and a 2-image test run produced a format-valid `submission.csv`. The full 180-image run was
-not repeated with this notebook.
+not repeated with this notebook. The instance scorer was added afterwards: its submission was built from
+the per-instance features of a full 180-image CPU run of the same pipeline code
+(`analysis/scripts/filament_test_instances_cpu.py`, `make_scorer_submission.py`), not by this notebook.
 
 ## Retraining
 `training/filament_unet_ensemble.py` (stage-A, 5 folds x 30 epochs) and

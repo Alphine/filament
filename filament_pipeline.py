@@ -6,6 +6,8 @@ Stage-B : connected components of the thresholded map become candidates; a crop
           box-shaped seed.
 Limb    : instances whose centroid lies beyond 0.88 of the solar-disk radius are
           dropped (near-limb false positives; see report).
+Scorer  : optionally, a learned instance scorer (filament_scorer.py) drops the instances
+          whose predicted matched IoU is below the PQ break-even.
 
 Everything here is inference-only. Weights (`unet_fold1..5.pt`, `refiner_best.pt`) are
 republished as a Kaggle dataset shortly before the submission deadline; see the
@@ -176,9 +178,10 @@ def predict_ensemble(models: list[nn.Module], gray: np.ndarray, device: torch.de
 
 
 # -------------------------------------------------------------------- candidates
-def extract_candidates(prob: np.ndarray) -> np.ndarray:
+def extract_candidates(prob: np.ndarray, thr: float = CAND_THR, min_area: int = CAND_MIN_AREA,
+                       min_mean_prob: float = CAND_MIN_MEAN_PROB) -> np.ndarray:
     """Label map (0 = background, 1..n = candidate instances) from a probability map."""
-    m = (prob > CAND_THR).astype(np.uint8)
+    m = (prob > thr).astype(np.uint8)
     if CAND_CLOSE_K:
         m = cv2.morphologyEx(m, cv2.MORPH_CLOSE,
                              cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (CAND_CLOSE_K,) * 2))
@@ -187,10 +190,10 @@ def extract_candidates(prob: np.ndarray) -> np.ndarray:
     nid = 1
     for i in range(1, n):
         area = stats[i, cv2.CC_STAT_AREA]
-        if area < CAND_MIN_AREA or area > CAND_MAX_AREA:
+        if area < min_area or area > CAND_MAX_AREA:
             continue
         comp = lab == i
-        if prob[comp].mean() < CAND_MIN_MEAN_PROB:
+        if prob[comp].mean() < min_mean_prob:
             continue
         out[comp] = nid
         nid += 1
@@ -293,12 +296,18 @@ class Pipeline:
     refiner: nn.Module
     device: torch.device
     limb_drop: float | None = LIMB_DROP_T   # None disables the near-limb filter
+    scorer: object | None = None            # filament_scorer.InstanceScorer; None disables the scorer
 
     def segment(self, gray: np.ndarray) -> np.ndarray:
         """uint8 grayscale image -> instance label map (0 = background)."""
         prob = predict_ensemble(self.stage_a, gray, self.device)
-        labels = refine_candidates(gray, extract_candidates(prob), self.refiner, self.device)
-        return drop_near_limb(labels, gray, self.limb_drop) if self.limb_drop is not None else labels
+        candidates = extract_candidates(prob)
+        labels = refine_candidates(gray, candidates, self.refiner, self.device)
+        if self.limb_drop is not None:
+            labels = drop_near_limb(labels, gray, self.limb_drop)
+        if self.scorer is not None:
+            labels = self.scorer.filter(gray, labels, candidates, prob)
+        return labels
 
 
 def label_map_to_rles(labels: np.ndarray) -> list[str]:

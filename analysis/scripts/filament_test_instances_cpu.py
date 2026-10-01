@@ -27,7 +27,7 @@ except ImportError:
 import numpy as np
 
 import filament_pipeline as fp
-import instance_features as feats
+import filament_scorer as feats
 
 CHUNK_INDEX = int(os.environ.get("CHUNK_INDEX", "0"))
 CHUNK_TOTAL = int(os.environ.get("CHUNK_TOTAL", "4"))

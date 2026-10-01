@@ -1,16 +1,28 @@
-"""Inference-time features of predicted filament instances (no ground truth involved).
+"""Learned instance scorer: the last stage of the pipeline.
 
-Used to build the training table of the learned instance scorer (filament_oof_instances_cpu.py) and
-to score the test predictions (filament_test_instances_cpu.py); both must compute identical features.
+Under PQ, keeping a predicted instance adds its matched IoU to the numerator and 0.5 to the denominator
+in every annotator pass, so an instance is worth keeping only if its expected matched IoU exceeds PQ / 2.
+A gradient-boosted regressor (LightGBM) predicts that expected matched IoU from features available at
+inference time -- stage-A probability statistics, shape, local contrast, position on the disk and
+neighbourhood -- and instances below the threshold are dropped. It was fitted on 4,694 out-of-fold
+instances (analysis/scripts/analyze_instance_scorer.py; out of fold +0.0144 PQ, leaderboard 0.36 -> 0.37).
+
+The feature functions here are the single implementation used for fitting and for inference.
 """
 
+from __future__ import annotations
+
+import json
 import math
+import os
 
 import cv2
 import numpy as np
 from scipy import ndimage
 
 import filament_pipeline as fp
+
+MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 
 PAD = 32
 K_IN = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
@@ -95,3 +107,34 @@ def image_instances(g, lab, cand, prob):
                            "area_rank": float((ar < ar[j]).mean()), "img_pred_area": float(ar.sum()),
                            "img_mean_p": float(prob[::4, ::4].mean())})
     return inst, disk
+
+
+def quantise(prob: np.ndarray) -> np.ndarray:
+    """Probability map in 1/255 steps: the precision of the stored maps the scorer was fitted on."""
+    return (prob * 255).round().astype(np.uint8).astype(np.float32) / 255.0
+
+
+class InstanceScorer:
+    """Predicted expected matched IoU per instance; `filter` drops the instances below `tau`."""
+
+    def __init__(self, booster, features: list[str], tau: float) -> None:
+        self.booster, self.features, self.tau = booster, features, tau
+
+    @classmethod
+    def load(cls, model_dir: str = MODEL_DIR) -> "InstanceScorer":
+        import lightgbm as lgb
+        with open(os.path.join(model_dir, "instance_scorer.json")) as f:
+            meta = json.load(f)
+        return cls(lgb.Booster(model_file=os.path.join(model_dir, "instance_scorer.txt")), meta["features"], meta["tau"])
+
+    def scores(self, instances: list[dict]) -> np.ndarray:
+        if not instances:
+            return np.zeros(0)
+        return self.booster.predict(np.array([[r["feats"][k] for k in self.features] for r in instances], float))
+
+    def filter(self, gray: np.ndarray, labels: np.ndarray, candidates: np.ndarray, prob: np.ndarray) -> np.ndarray:
+        """Label map without the instances scored below tau. `candidates` is the stage-A candidate map
+        (same ids as `labels`), `prob` the stage-A probability map."""
+        inst, _ = image_instances(gray, labels, candidates, quantise(prob))
+        drop = [r["id"] for r, v in zip(inst, self.scores(inst)) if v < self.tau]
+        return np.where(np.isin(labels, drop), 0, labels) if drop else labels

@@ -1,8 +1,7 @@
 """Apply the learned instance scorer to the test predictions (filament_test_instances_cpu.py).
 
-Loads the scorer fitted on all out-of-fold instances and its threshold tau = out-of-fold PQ / 2
-(analysis/results/instance_scorer.txt and instance_scorer_summary.json, written by
-analyze_instance_scorer.py), drops every test instance whose predicted matched IoU is below tau and
+Loads the released scorer (models/, fitted on all out-of-fold instances by analyze_instance_scorer.py;
+tau = out-of-fold PQ / 2), drops every test instance whose predicted matched IoU is below tau and
 writes the submission CSV to the directory given as the first argument. Nothing is submitted here.
 """
 import csv
@@ -11,17 +10,18 @@ import json
 import os
 import sys
 
-import lightgbm as lgb
 import numpy as np
 
 sys.path.insert(0, '.')
 import filament_pipeline as fp
+import filament_scorer as fs
 
 sys.stdout.reconfigure(encoding='utf-8')
 out_dir = sys.argv[1]
 summ = json.load(open('analysis/results/instance_scorer_summary.json'))
 assert summ['verdict'].startswith('ADOPT'), summ['verdict']
-booster, feats, tau = lgb.Booster(model_file='analysis/results/instance_scorer.txt'), summ['features'], summ['tau']
+scorer = fs.InstanceScorer.load()
+tau = scorer.tau
 images = []
 for p in sorted(glob.glob('analysis/results/test_instances/test_instances_chunk*.json')):
     d = json.load(open(p))
@@ -32,7 +32,7 @@ assert len(images) == n_test == len({im['stem'] for im in images}), (len(images)
 rows, base_rows, scores = [], [], []
 for im in images:
     inst = im['instances']
-    s = booster.predict(np.array([[r['feats'][k] for k in feats] for r in inst], float)) if inst else np.zeros(0)
+    s = scorer.scores(inst)
     scores += s.tolist()
     base_rows += [{'filament_id': f"{im['stem']}_{i}", 'segmentation_rle': r['rle']} for i, r in enumerate(inst, 1)]
     kept = [r['rle'] for r, v in zip(inst, s) if v >= tau]

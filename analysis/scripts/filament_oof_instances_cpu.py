@@ -28,7 +28,7 @@ import pycocotools.mask as mu
 
 import filament_metric as fm
 import filament_pipeline as fp
-import instance_features as feats
+import filament_scorer as feats
 
 INPUT, OUT = "/kaggle/input", "/kaggle/working"
 t0 = time.time()
