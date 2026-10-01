@@ -98,4 +98,6 @@ out['holdout'] = report(H, hp, tau, 'hold-out (gate)')
 ok = out['oof']['diff'] >= 0.005 and out['oof']['ci95'][0] > 0 and out['holdout']['diff'] >= 0
 out['verdict'] = 'ADOPT -> build the scorer into the pipeline, then one leaderboard probe' if ok else 'NOT ADOPTED'
 print('\nVERDICT:', out['verdict'])
+full.booster_.save_model('analysis/results/instance_scorer.txt')    # used by make_scorer_submission.py
+out['features'] = feats
 json.dump(out, open('analysis/results/instance_scorer_summary.json', 'w'), indent=1)
