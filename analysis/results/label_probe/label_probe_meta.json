@@ -1,0 +1,66 @@
+{
+ "base_csv": "/kaggle/input/notebooks/abukayyisahbasyid/filament-limb-drop-ext/submission_drop@0.88.csv",
+ "test": {
+  "base": {
+   "rows": 1267,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 1882.6
+  },
+  "dil1": {
+   "rows": 1267,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 2267.0
+  },
+  "dil2": {
+   "rows": 1267,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 2656.1
+  },
+  "ero1": {
+   "rows": 1267,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 1506.8
+  },
+  "ero2": {
+   "rows": 1267,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 1148.5
+  },
+  "small@500": {
+   "rows": 1132,
+   "images_with_predictions": 176,
+   "images_without_predictions": 4,
+   "mean_area": 2056.4
+  },
+  "small@700": {
+   "rows": 937,
+   "images_with_predictions": 173,
+   "images_without_predictions": 7,
+   "mean_area": 2359.8
+  },
+  "small@900": {
+   "rows": 795,
+   "images_with_predictions": 167,
+   "images_without_predictions": 13,
+   "mean_area": 2639.5
+  },
+  "small@1200": {
+   "rows": 652,
+   "images_with_predictions": 161,
+   "images_without_predictions": 19,
+   "mean_area": 2989.7
+  },
+  "small@1600": {
+   "rows": 486,
+   "images_with_predictions": 154,
+   "images_without_predictions": 26,
+   "mean_area": 3541.7
+  }
+ },
+ "seconds": 2413
+}
