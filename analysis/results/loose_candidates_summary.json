@@ -1,0 +1,61 @@
+{
+ "tau": 0.1972,
+ "configs": {
+  "prod": {
+   "thresholds": [
+    0.4,
+    400,
+    0.7
+   ],
+   "oof_unscored": 0.3943,
+   "oof_scored": 0.4075,
+   "holdout_unscored": 0.4369,
+   "holdout_scored": 0.4397
+  },
+  "loose": {
+   "thresholds": [
+    0.3,
+    200,
+    0.6
+   ],
+   "oof_unscored": 0.3889,
+   "oof_scored": 0.4115,
+   "holdout_unscored": 0.4234,
+   "holdout_scored": 0.4369,
+   "oof_diff": 0.004,
+   "oof_ci95": [
+    0.0001,
+    0.008
+   ],
+   "holdout_diff": -0.0028,
+   "holdout_ci95": [
+    -0.017,
+    0.0107
+   ],
+   "adopt": false
+  },
+  "xloose": {
+   "thresholds": [
+    0.2,
+    150,
+    0.45
+   ],
+   "oof_unscored": 0.3738,
+   "oof_scored": 0.4005,
+   "holdout_unscored": 0.3985,
+   "holdout_scored": 0.425,
+   "oof_diff": -0.007,
+   "oof_ci95": [
+    -0.0126,
+    -0.0012
+   ],
+   "holdout_diff": -0.0147,
+   "holdout_ci95": [
+    -0.032,
+    0.0027
+   ],
+   "adopt": false
+  }
+ },
+ "verdict": "NOT ADOPTED (no configuration beats prod + scorer by the pre-set margin)"
+}
