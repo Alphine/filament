@@ -29,8 +29,13 @@ filament_scorer.py        learned instance scorer: instance features and the kee
 models/                   the fitted scorer (LightGBM text model, feature list and threshold)
 filament_metric.py        the official PQ, per annotator pass; fixed hold-out split
 requirements.txt          pinned versions taken from the Kaggle image used for all runs
-training/                 the two Kaggle GPU scripts that produced the weights
-analysis/                 error decomposition, annotator agreement, consensus-target and threshold studies (scripts + results)
+training/                 filament_unet_ensemble.py and filament_refiner.py produced the released weights (Kaggle GPU scripts);
+                          the other scripts are follow-up GPU studies (checkpoint selection, consensus targets, refiner
+                          generation 2, spine head; filament_resample_stagea.py is prepared but has not been run)
+analysis/                 studies (scripts + results): filament_*_cpu.py / *_gpu.py are the Kaggle kernel scripts, analyze_*.py the
+                          local analyses that read their outputs from analysis/results/
+tests/                    pytest suite: metric, candidates, near-limb filter, submission checks, instance scorer (including a
+                          cross-version check of the stored model); run with `python -m pytest tests`
 report/report.md          long-form technical report (all findings)
 report/overleaf/          the 4-page report in the organizers' ACM (acmart) Overleaf template: main.tex, preamble.tex,
                           main.bib, figures, overleaf_project.zip (upload to Overleaf) and report_compiled_tectonic.pdf
