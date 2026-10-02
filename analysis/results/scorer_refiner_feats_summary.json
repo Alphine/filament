@@ -1,0 +1,24 @@
+{
+ "tau": 0.1972,
+ "released": {
+  "auc_oof": 0.7837,
+  "oof": 0.4088,
+  "holdout": 0.4427
+ },
+ "extended": {
+  "auc_oof": 0.7894,
+  "oof": 0.4083,
+  "holdout": 0.4401
+ },
+ "oof_diff": -0.0005,
+ "oof_ci95": [
+  -0.0025,
+  0.0015
+ ],
+ "holdout_diff": -0.0025,
+ "holdout_ci95": [
+  -0.0088,
+  0.004
+ ],
+ "verdict": "NOT ADOPTED"
+}
