@@ -1,0 +1,33 @@
+{
+ "tau": 0.1972,
+ "n_instances": 5084,
+ "prod_same_as_stored": 5084,
+ "oracle": {
+  "select": 0.0223,
+  "select_drop": 0.095
+ },
+ "fixed_variant_diff": {
+  "prod": 0.0,
+  "t30": -0.0017,
+  "t40": -0.0006,
+  "t60": 0.0007,
+  "t70": -0.0002,
+  "flip": 0.0001,
+  "p20": -0.0026,
+  "p60": -0.0028,
+  "avg4": 0.0012,
+  "cand": -0.0212
+ },
+ "oof_diff": -0.0013,
+ "oof_ci95": [
+  -0.003,
+  0.0003
+ ],
+ "holdout_diff": -0.0047,
+ "holdout_ci95": [
+  -0.0096,
+  -0.0007
+ ],
+ "switch_only_diff": -0.0005,
+ "verdict": "NOT ADOPTED"
+}
