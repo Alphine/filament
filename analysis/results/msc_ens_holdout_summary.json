@@ -1,0 +1,22 @@
+{
+ "limb": {
+  "one_scale": 0.4383,
+  "three_scales": 0.4269,
+  "diff": -0.0114,
+  "ci95": [
+   -0.0304,
+   0.0049
+  ]
+ },
+ "nolimb": {
+  "one_scale": 0.4325,
+  "three_scales": 0.4238,
+  "diff": -0.0087,
+  "ci95": [
+   -0.0283,
+   0.0087
+  ]
+ },
+ "integrity_identical": 50,
+ "gate": "FAIL -> stop, do not run the test set"
+}
