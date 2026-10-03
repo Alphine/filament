@@ -62,3 +62,27 @@ def test_submission_validation():
     empty = mu.encode(np.zeros((2048, 2048), np.uint8, order="F"))["counts"].decode("ascii")
     with pytest.raises(ValueError):                                   # empty mask
         fp.validate_submission_rows([{"filament_id": "a_1", "segmentation_rle": empty}], {"a"})
+
+
+def test_multiscale_inference_uses_the_resized_image_and_returns_full_size_maps():
+    import torch
+    seen = []
+
+    class Probe(torch.nn.Module):
+        def forward(self, x):
+            seen.append(tuple(x.shape[-2:]))
+            return torch.zeros(x.shape[0], 1, *x.shape[-2:])
+
+    model, dev = [Probe()], torch.device("cpu")
+    gray = np.full((2048, 2048), 100, np.uint8)
+    one = fp.predict_scaled(model, gray, 1.0, dev)
+    assert np.array_equal(one, fp.predict_ensemble(model, gray, dev)) and one.shape == (2048, 2048)
+    seen.clear()
+    p = fp.predict_scaled(model, gray, 0.75, dev)
+    assert p.shape == (2048, 2048) and seen and all(s == (512, 512) for s in seen)
+    ms = fp.predict_multiscale(model, gray, (0.75, 1.0), dev)
+    assert ms.shape == (2048, 2048) and np.allclose(ms, 0.5)             # sigmoid(0) at every scale
+
+
+def test_pipeline_defaults_to_the_single_scale_setting():
+    assert fp.Pipeline.__dataclass_fields__["scales"].default == (1.0,) and fp.MSC_SCALES == (0.75, 1.0, 1.25)

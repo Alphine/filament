@@ -6,6 +6,7 @@ Stage-B : connected components of the thresholded map become candidates; a crop
           box-shaped seed.
 Limb    : instances whose centroid lies beyond 0.88 of the solar-disk radius are
           dropped (near-limb false positives; see report).
+Scales  : optionally the probability maps of several image scales are averaged (multi-scale TTA).
 Scorer  : optionally, a learned instance scorer (filament_scorer.py) drops the instances
           whose predicted matched IoU is below the PQ break-even.
 
@@ -49,6 +50,9 @@ IMAGENET_STD = np.array([0.229, 0.224, 0.225], np.float32)[:, None, None]
 # near-limb filter: drop instances whose centroid is beyond LIMB_DROP_T * disk radius
 # (chosen out of fold: +0.0065 PQ on 657 images, +0.0059 on the hold-out; see report)
 LIMB_DROP_T = 0.88
+
+# multi-scale TTA: scales of the released multi-scale setting (Pipeline(scales=MSC_SCALES))
+MSC_SCALES = (0.75, 1.0, 1.25)
 
 # dihedral TTA: (name, forward transform); every transform used here is its own inverse
 TTA = (
@@ -175,6 +179,24 @@ def predict_ensemble(models: list[nn.Module], gray: np.ndarray, device: torch.de
             p = np.ascontiguousarray(f(p))
             acc = p if acc is None else acc + p
     return acc / (len(models) * len(TTA))
+
+
+def predict_scaled(models: list[nn.Module], gray: np.ndarray, scale: float, device: torch.device | None = None,
+                   batch: int | None = None) -> np.ndarray:
+    """predict_ensemble on the image resized by `scale` (area interpolation down, linear up), resampled
+    back to the image size; scale 1.0 is exactly predict_ensemble."""
+    if scale == 1.0:
+        return predict_ensemble(models, gray, device, batch)
+    size = int(round(gray.shape[0] * scale))
+    resized = cv2.resize(gray, (size, size), interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR)
+    p = predict_ensemble(models, resized, device, batch)
+    return cv2.resize(p, (gray.shape[1], gray.shape[0]), interpolation=cv2.INTER_LINEAR)
+
+
+def predict_multiscale(models: list[nn.Module], gray: np.ndarray, scales: tuple[float, ...] = MSC_SCALES,
+                       device: torch.device | None = None, batch: int | None = None) -> np.ndarray:
+    """Mean of the per-scale probability maps (out of fold, scales (0.75, 1.0, 1.25) beat one scale by +0.0117 PQ)."""
+    return np.mean([predict_scaled(models, gray, s, device, batch) for s in scales], axis=0)
 
 
 # -------------------------------------------------------------------- candidates
@@ -306,10 +328,11 @@ class Pipeline:
     device: torch.device
     limb_drop: float | None = LIMB_DROP_T   # None disables the near-limb filter
     scorer: object | None = None            # filament_scorer.InstanceScorer; None disables the scorer
+    scales: tuple[float, ...] = (1.0,)       # stage-A scales; MSC_SCALES enables multi-scale TTA
 
     def segment(self, gray: np.ndarray) -> np.ndarray:
         """uint8 grayscale image -> instance label map (0 = background)."""
-        prob = predict_ensemble(self.stage_a, gray, self.device)
+        prob = predict_multiscale(self.stage_a, gray, self.scales, self.device)
         candidates = extract_candidates(prob)
         labels = refine_candidates(gray, candidates, self.refiner, self.device)
         if self.limb_drop is not None:
