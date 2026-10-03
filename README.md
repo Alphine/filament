@@ -77,9 +77,12 @@ measured.
 **Validation.** `pipeline.ipynb` was run on Kaggle (CPU) from the public weights dataset: on the first 3
 hold-out images it reproduced the per-image official TP/FP/FN and summed IoU of our earlier runs
 exactly, and a 2-image test run produced a format-valid `submission.csv`. The full 180-image run was
-not repeated with this notebook. The instance scorer was added afterwards: its submission was built from
-the per-instance features of a full 180-image CPU run of the same pipeline code
-(`analysis/scripts/filament_test_instances_cpu.py`, `make_scorer_submission.py`), not by this notebook.
+not repeated with this notebook. The instance scorer was added afterwards. Its submission was built from the
+per-instance features of a full 180-image CPU run of the same pipeline code
+(`analysis/scripts/filament_test_instances_cpu.py`, `make_scorer_submission.py`), and the released code path was
+then checked end to end on Kaggle (`filament_e2e_check_cpu.py`, 2 October): `Pipeline(..., scorer=InstanceScorer.load())`
+reproduced the per-image official counts of all 50 hold-out images (pooled PQ 0.4427) and the submitted rows of four
+test images exactly, and the `tests/` suite passed on the Kaggle image (LightGBM 4.6.0, torch 2.11).
 
 ## Retraining
 `training/filament_unet_ensemble.py` (stage-A, 5 folds x 30 epochs) and

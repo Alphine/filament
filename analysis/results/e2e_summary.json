@@ -1,0 +1,11 @@
+{
+ "versions": {
+  "lightgbm": "4.6.0",
+  "torch": "2.11.0+cpu"
+ },
+ "holdout_identical": 50,
+ "holdout_pq": 0.4427,
+ "expected_pq": 0.4427,
+ "test_identical": true,
+ "verdict": "PASS"
+}
