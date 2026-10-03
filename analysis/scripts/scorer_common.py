@@ -1,7 +1,5 @@
 """Shared helpers of the instance-scorer studies (analyze_instance_scorer.py, analyze_loose_candidates.py)."""
-import lightgbm as lgb
 import numpy as np
-from sklearn.model_selection import GroupKFold
 
 DROP = ('cx', 'cy')                      # absolute position: not used as a feature
 PARAMS = dict(n_estimators=400, learning_rate=0.03, num_leaves=15, min_child_samples=20, subsample=0.8,
@@ -46,11 +44,14 @@ def counts_after(D, keep):
 
 
 def fit(D):
+    import lightgbm as lgb
     return lgb.LGBMRegressor(**PARAMS).fit(D['X'], D['y'], sample_weight=D['w'])
 
 
 def cv_predict(D, folds=5):
     """Predictions for every instance from a model that saw no instance of the same image."""
+    import lightgbm as lgb
+    from sklearn.model_selection import GroupKFold
     pred = np.zeros(len(D['y']))
     for tr, va in GroupKFold(folds).split(D['X'], D['y'], D['grp']):
         m = lgb.LGBMRegressor(**PARAMS).fit(D['X'][tr], D['y'][tr], sample_weight=D['w'][tr])
