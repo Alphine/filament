@@ -12,7 +12,10 @@ Rules fixed BEFORE the run:
             single-scale ensemble (0.4384 with the limb filter), (2) the instance scorer is refitted on
             multi-scale features (calibration shifts) and must keep its out-of-fold gain, (3) the test set is
             re-run, (4) one leaderboard probe.
-  integrity single-scale counts without the limb filter are compared with the stored CPU out-of-fold run.
+  integrity single-scale counts without the limb filter are compared with the stored CPU out-of-fold run;
+  futility  the kernels are run in two parts (folds 1-3, then 4-5). After folds 1-3 (394 images) the second
+            part is NOT run if the primary combination's gain has a CI95 upper bound below +0.005: the
+            remaining 263 images could not lift a gain that small to the adoption margin.
 """
 import glob
 import json
@@ -26,13 +29,16 @@ sys.stdout.reconfigure(encoding='utf-8')
 rng = np.random.default_rng(0)
 PRIMARY = 's075_100_125'
 
-res = []
+res, n_folds = [], 0
 for p in sorted(glob.glob('analysis/results/msc_tta/msc_fold*.json')):
     d = json.load(open(p))
     assert d['status'] == 'done', (p, d['status'])
     res += d['results']
+    n_folds += 1
 res.sort(key=lambda r: r['name'])
-assert len(res) == 657, len(res)
+full = n_folds == 5
+assert (len(res) == 657) if full else (n_folds >= 1), len(res)
+print(f'{n_folds} of 5 folds, {len(res)} images' + ('' if full else ' -- PARTIAL: futility check only'))
 combos = list(res[0]['combos'])
 
 stored = {}
@@ -41,7 +47,7 @@ for p in sorted(glob.glob('analysis/results/oof/oof_fold*.json')):
 S0 = np.array([r['combos']['s100']['nolimb'] for r in res], float)
 ST = np.array([stored[r['name']] for r in res], float)
 same = int((np.abs(S0[:, 1:] - ST[:, 1:]) < 0.5).all(1).sum())
-print(f'integrity: single-scale counts equal the stored CPU run on {same}/657 images; pooled PQ {PQ(S0.sum(0)):.4f} vs stored {PQ(ST.sum(0)):.4f}')
+print(f'integrity: single-scale counts equal the stored CPU run on {same}/{len(res)} images; pooled PQ {PQ(S0.sum(0)):.4f} vs stored {PQ(ST.sum(0)):.4f}')
 
 out = {'integrity_identical': same, 'combos': {}}
 base = {k: np.array([r['combos']['s100'][k] for r in res], float) for k in ('limb', 'nolimb')}
@@ -60,8 +66,11 @@ for c in combos:
 
 p = out['combos'][PRIMARY]['limb']
 ok = bool(p['diff'] >= 0.005 and p['ci95'][0] > 0)
-out['verdict'] = ('ADOPT -> hold-out ensemble check, scorer refit on multi-scale features, test re-run, leaderboard probe' if ok else
-                  'NOT ADOPTED (gain < +0.005 or CI includes 0)')
+if full:
+    out['verdict'] = ('ADOPT -> hold-out ensemble check, scorer refit on multi-scale features, test re-run, leaderboard probe' if ok else
+                      'NOT ADOPTED (gain < +0.005 or CI includes 0)')
+else:
+    out['verdict'] = ('FUTILE -> do not run folds 4-5' if p['ci95'][1] < 0.005 else 'CONTINUE -> run folds 4-5')
 print(f'\nprimary {PRIMARY} (limb): {p["diff"]:+.4f}, CI95 [{p["ci95"][0]:+.4f}, {p["ci95"][1]:+.4f}]')
 print('VERDICT:', out['verdict'])
 json.dump(out, open('analysis/results/msc_tta_summary.json', 'w'), indent=1)

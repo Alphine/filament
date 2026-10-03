@@ -17,7 +17,9 @@ Safety (the GPU is shared with other research):
   * every image is checked for non-finite probabilities; any error is written to the output JSON and
     re-raised (the kernel stops, nothing is retried);
   * results are written every 5 images, a fold is marked done only when all its images are scored,
-    and a wall-clock budget (TIME_BUDGET_S, default 3 h) ends the run cleanly with status "partial".
+    and a wall-clock budget (TIME_BUDGET_S, default 3 h) ends the run cleanly with status "partial";
+    a partial run's outputs, attached as a kernel source of a new kernel, are picked up and continued;
+  * after 10 images the projected total time is checked: more than twice the budget stops the run.
 Environment: FOLDS (e.g. "1,2,3"), TIME_BUDGET_S, REQUIRE_CUDA (default 1).
 """
 
@@ -102,33 +104,51 @@ def main():
     refiner = fp.load_refiner(next(p for p in glob.glob(f"{INPUT}/**/refiner_best.pt", recursive=True)), device)
     print(f"device {device}; folds {FOLDS}", flush=True)
 
-    checked = False
+    val_of = {F: [pool[i] for i in folds[F - 1]] for F in FOLDS}
+    assert not any(set(v) & set(holdout) for v in val_of.values())
+    prev = {}                                    # results of an earlier, cleanly ended run of this kernel (mounted as a source)
+    for F in FOLDS:
+        for q in glob.glob(f"{INPUT}/**/msc_fold{F}.json", recursive=True):
+            d = json.load(open(q))
+            if d.get("fold") == F and all(r["name"] in val_of[F] for r in d["results"]):
+                prev[F] = d
+                print(f"resuming fold {F}: {len(d['results'])} images already scored (status {d['status']})", flush=True)
+    todo = sum(len(v) - len(prev.get(F, {}).get("results", [])) for F, v in val_of.items())
+    checked, n_new, t_start = bool(prev), 0, None
+    print(f"{todo} images to score", flush=True)
     for F in FOLDS:
         path = next(p for p in glob.glob(f"{INPUT}/**/unet_fold{F}.pt", recursive=True))
         models = fp.load_stage_a([path], device)
-        val = [pool[i] for i in folds[F - 1]]
-        assert not set(val) & set(holdout)
-        res = {"fold": F, "status": "running", "n_images": len(val), "results": []}
+        val = val_of[F]
+        res = {"fold": F, "status": "running", "n_images": len(val), "results": list(prev.get(F, {}).get("results", []))}
+        have = {r["name"] for r in res["results"]}
         for k, name in enumerate(val, 1):
+            if name in have:
+                continue
             if time.time() - t0 > TIME_BUDGET_S:
                 res["status"] = "partial"
                 dump(f"msc_fold{F}.json", res)
                 state["status"] = "partial"
-                print(f"time budget reached in fold {F} after {k - 1} images", flush=True)
+                print(f"time budget reached in fold {F} after {len(res['results'])} images", flush=True)
                 return
+            t_start = t_start or time.time()
             g = fp.read_gray(os.path.join(train_dir, name))
             out = score_image(g, per_file[name], models, refiner, device)
             res["results"].append({"name": name, "n_pass": len(per_file[name]), "combos": out})
-            if not checked and k == min(3, len(val)) and STORED_FIRST.get(str(F)):
+            n_new += 1
+            if not checked and len(res["results"]) == min(3, len(val)) and STORED_FIRST.get(str(F)):
                 for r, ref in zip(res["results"], STORED_FIRST[str(F)]):
                     assert r["name"] == ref[0], (r["name"], ref[0])
                     got = r["combos"]["s100"]["nolimb"]
-                    assert all(abs(a - b) <= 1 for a, b in zip(got[1:], ref[2:])), \
-                        f"STOP: single-scale counts {got} do not reproduce the stored CPU run {ref} on {name}"
+                    assert all(abs(a - b) <= 1 for a, b in zip(got[1:], ref[2:])),                         f"STOP: single-scale counts {got} do not reproduce the stored CPU run {ref} on {name}"
                 checked = True
                 print("integrity check passed: single-scale counts reproduce the stored out-of-fold run", flush=True)
-            if k % 5 == 0 or k == len(val):
-                print(f"fold {F}: {k}/{len(val)} {time.time() - t0:.0f}s", flush=True)
+            if n_new == 10:                          # do not burn the quota on a run that cannot finish
+                rate = (time.time() - t_start) / n_new
+                print(f"{rate:.1f} s per image; projected {rate * todo / 3600:.2f} h for {todo} images", flush=True)
+                assert rate * todo <= 2 * TIME_BUDGET_S, f"STOP: projected {rate * todo / 3600:.1f} h exceeds twice the time budget"
+            if len(res["results"]) % 5 == 0 or len(res["results"]) == len(val):
+                print(f"fold {F}: {len(res['results'])}/{len(val)} {time.time() - t0:.0f}s", flush=True)
                 dump(f"msc_fold{F}.json", res)
         res["status"] = "done"
         dump(f"msc_fold{F}.json", res)
