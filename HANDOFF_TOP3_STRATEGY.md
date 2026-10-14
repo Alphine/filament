@@ -8,7 +8,7 @@ Label: **[fakta]** = tercatat di repo/report; **[inferensi]** = kesimpulan penyu
 
 ## 0. Ringkasan satu paragraf
 
-Pipeline dua tahap (5-fold U-Net ResNet34 + crop refiner + near-limb filter + LightGBM instance scorer) mendapat **hold-out PQ 0.4427**, **OOF PQ 0.409**, tetapi **LB publik hanya 0.37**. Papan "valid" berakhir di **0.41** (2 tim), 0.40 (11 tim), 0.39 (21 tim). Di atasnya ada 52 tim di 0.49–0.62 yang dianggap invalid oleh organizer. Peringkat kita ~96 dari ~610 tim valid. Untuk Top 3 di LB valid diperlukan **≥0.41 (+0.04)**. Hampir semua lever pasca-proses sudah dicoba dan bernilai nol; bukti menunjuk ke **kualitas stage-A** dan ke **gap 0.04–0.05 antara OOF/hold-out dan LB yang belum dijelaskan**. Evaluasi final organizer = **kuantitatif + kualitatif**, jadi strategi dibagi dua track: (A) naikkan skor, (B) menangkan penilaian kualitatif.
+Pipeline dua tahap (5-fold U-Net ResNet34 + crop refiner + near-limb filter + LightGBM instance scorer) mendapat **hold-out PQ 0.4427**, **OOF PQ 0.409**, tetapi **LB publik hanya 0.37**. Papan "valid" berakhir di **0.41** (2 tim), 0.40 (11 tim), 0.39 (21 tim). Di atasnya ada 52 tim di 0.49–0.62 yang dianggap invalid oleh organizer. Peringkat kita ~96 dari ~610 tim valid (report.md:111 mencatat rank 167 dari 806 semua tim pada 0.37). Untuk Top 3 di LB valid diperlukan **≥0.41 (+0.04)**. Hampir semua lever pasca-proses sudah dicoba dan bernilai nol; bukti menunjuk ke **kualitas stage-A** dan ke **gap 0.04–0.05 antara OOF/hold-out dan LB yang belum dijelaskan**. Evaluasi final organizer = **kuantitatif + kualitatif**, jadi strategi dibagi dua track: (A) naikkan skor, (B) menangkan penilaian kualitatif.
 
 ## 1. Kompetisi dan metrik
 
@@ -49,7 +49,7 @@ Tabel skor (hold-out / LB): proxy awal 0.3754 / 0.33; mix R34+R50 0.4030 / 0.34;
 | Multi-scale TTA, single model OOF (0.75/1.0/1.25) | **+0.0117** (CI95 +0.0067..+0.0169) | positif |
 | Multi-scale TTA pada ensemble, hold-out | −0.0114 (CI95 −0.030..+0.005) | gate gagal, test tidak dijalankan |
 | Dilasi/erosi mask ±1px (probe LB) | 0.31 / 0.32 (cocok prediksi null) | konvensi label test = train |
-| Pretraining self-supervised GONG H-alpha | belum dilakukan; perkiraan 3–6 GPU-hari | di-skip |
+| Pretraining self-supervised GONG H-alpha | belum dilakukan; perkiraan 3–6 GPU-jam + fine-tuning (report.md:99) | di-skip (peluang gain ≥0.01 <20%) |
 
 Pelajaran statistik [fakta]: dengan hold-out 50 gambar, SE paired ≈0.01, sehingga banyak hasil nol bersifat **tidak konklusif**, bukan negatif. Satu model tunggal OOF = 0.388 (rentang fold 0.372–0.407); ensemble menambah ~+0.026.
 
@@ -86,6 +86,8 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 - Hitung PQ OOF yang diboboti ke distribusi test menggunakan fitur tambahan di atas (bukan hanya tahun/situs).
 - Keluaran: apakah gap bisa dikaitkan ke subset tertentu. Jika ya, lever training/threshold khusus subset itu.
 
+**A2-0. Resampling patch per epoch (E1; lever termurah, terlewat di versi awal dokumen ini).** report.md:64 (ditemukan 30 Sep, belum diuji) dan kode (`training/filament_unet_ensemble.py:210`, generator di-seed hanya oleh indeks sampel; DataLoader tanpa shuffle) menunjukkan 30 epoch hanya melihat **1.760 patch unik** (52.800 draw). Skrip siap: `training/filament_resample_stagea.py` (fail-fast, stop-on-error, checkpoint, time budget) + `analysis/scripts/analyze_resample.py`. Gate terkunci di skrip: gain gabungan 5 fold dengan refiner >= +0.005 dengan CI95 > 0 terhadap **baseline EMA ckpt_selection (0.3998 pada 557 gambar)**, lalu hold-out ensemble tidak lebih rendah dari ensemble EMA. Biaya ~25-35 menit T4 per fold, ~3 jam + skoring. Jangan pilot 1 fold (pilot +0.0144 menjadi +0.0023 pada 5 fold, report.md:40-42). Gain diharapkan menyusut di ensemble (EMA +0.0144 -> +0.0032; spine +0.0074 -> +0.0016) [inferensi agen tinjauan, belum diverifikasi]. Baseline untuk semua varian A2 = EMA ckpt_selection, bukan "0.388".
+
 **A2. Stage-A lebih kuat (GPU, inti track).**
 - Konteks lebih besar: patch 768/1024 (sekarang 512) dengan batch/akumulasi gradient menyesuaikan. Dasar: multi-scale gain menunjukkan sensitivitas skala.
 - Diversitas encoder: ConvNeXt/EfficientNet-B3–B5/SegFormer (smp mendukung). Mix R34+R50 sebelumnya 0.34 LB pada proxy lama — ulangi dengan protokol OOF, bukan proxy.
@@ -101,14 +103,14 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 
 **A5. Hal yang jangan diulang** (sudah mati, lihat §3): refiner gen-2, spine multi-task, variant selection, loose candidates tanpa re-tune multi-scale, EMA ensemble, fitur refiner untuk scorer, Mask R-CNN publik.
 
-**A6. Dicoret (tidak layak).** Pretraining self-supervised pada GONG H-alpha tak berlabel diizinkan organizer selama hanya untuk training (forum 737215, 744047), tetapi 3-6 GPU-hari = 72-144 jam, melebihi kuota 40 jam yang dibagi dengan riset lain, dan deadline 15 Nov.
+**A6. Prioritas rendah (bukan mustahil).** Pretraining self-supervised pada GONG H-alpha tak berlabel diizinkan organizer (forum 737215, 744047; gambar tak berlabel tidak boleh mencakup test atau ±1 jam dari timestamp test, forum 748045; wajib diungkap di laporan). Biaya menurut report.md:99-100: sekitar **3-6 GPU-jam** plus fine-tuning (koreksi: versi awal dokumen ini salah menulis "GPU-hari"). Report menilai peluang gain ≥0.01 di bawah 20% dan tidak ada bukti publik bahwa ini mengalahkan inisialisasi ImageNet untuk H-alpha. Kerjakan hanya setelah E1 (A2-0) selesai dan masih ada kuota.
 
 **Anggaran GPU A2 [inferensi dari ~35 menit/fold pada patch 512]:** satu varian dengan OOF 5 fold ~3 jam T4 (patch 512) sampai ~3-7 jam (patch 768). Kuota hanya cukup untuk 2-3 varian. Jalankan satu per satu dan mintalah izin per kernel.
 
 ### Track B — Kualitatif (di sini peluang Top 3 paling nyata)
 
 1. **Klaim tunggal yang tajam** di abstrak: skor dibatasi oleh kesepakatan anotator (PQ 0.34); aturan break-even PQ/2 menghasilkan scorer yang +0.014 OOF tanpa tuning; boundary berada di optimum tajam (±1px = −0.04..−0.05).
-2. **Reproducibility (BERSYARAT, keputusan pemilik repo)**: kode sudah publik (Apache-2.0); bobot sengaja ditahan sejak 2026-09-23 (README "Weights availability": tidak dipublikasikan sampai mendekati 15 Nov agar kompetitor tidak membangun di atas checkpoint ini). Tidak ada bukti di repo bahwa organizer mewajibkan publikasi bobot; **[tidak diketahui]**, cek aturan/halaman Evaluation sebelum memutuskan. Jika wajib: publikasikan setelah submission final dengan `requirements.txt` terpin dan tautan di laporan (atau serahkan privat ke juri jika diterima). Jika tidak wajib: tahan bobot, simpan `SHA256SUMS.txt` sebagai bukti keaslian. Memublikasikan adalah tindakan ke luar yang tidak bisa ditarik kembali; butuh persetujuan eksplisit pemilik.
+2. **Reproducibility (BERSYARAT, keputusan pemilik repo)**: kode sudah publik (Apache-2.0); bobot sengaja ditahan sejak 2026-09-23 (README "Weights availability": tidak dipublikasikan sampai mendekati 15 Nov agar kompetitor tidak membangun di atas checkpoint ini). Hasil cek aturan (§7b): repo harus publik saat kompetisi tutup dan reproducible tanpa file tambahan; bobot tidak disebut eksplisit, tetapi tanpa bobot yang terjangkau penilaian tidak bisa dilakukan. Rencana: tahan sampai mendekati 15 Nov (setelah submission final), lalu publikasikan dengan `requirements.txt` terpin dan tautan di laporan; simpan `SHA256SUMS.txt`. Opsi "publikasikan hanya jika menang" berarti tidak dinilai. Memublikasikan adalah tindakan ke luar yang tidak bisa ditarik kembali; butuh persetujuan eksplisit pemilik.
 3. **Laporan 4 halaman template ACM** (`report/overleaf/`): masukkan skor LB final, hasil A1–A4 (termasuk negatif), dan satu tabel "apa yang membatasi" (annotator ceiling, error decomposition 54% near-miss).
 4. **Pertahankan sikap legitimasi**: §7–§8 report (tidak mengejar ujung atas LB, tidak memakai anotasi di luar kompetisi, tidak memakai isi notebook pre-computed). Ini nilai plus pada penilaian kualitatif.
 5. Figur kualitatif sudah ada (`report/figures/fig_morph_*.png`); tambahkan kegagalan-kasus terbaik dan satu demonstrasi scorer (instance yang dibuang vs dipertahankan).
@@ -137,6 +139,14 @@ tests/                    pytest: metrik, kandidat, near-limb, submission, score
 ```
 
 Perintah uji: `python -m pytest tests`.
+
+## 7b. Aturan organizer (dibaca dari halaman kompetisi 14 Okt; sumber: ringkasan agen, belum saya buka sendiri)
+
+- **Penilaian final = rubrik, bukan LB**: kuantitatif 70% (mean Dice, PQ, distribusi Dice/IoU, distribusi one-to-many/many-to-one) + kualitatif 30% (deskripsi pipeline, morfologi prediksi, kualitas kode). Evaluasi "contingent upon the availability of the source code". Kita hanya mengoptimalkan PQ; Dice dan statistik one-to-many/many-to-one ikut dinilai.
+- **Publikasi wajib untuk dinilai**: laporan 4 halaman + repo Git publik dengan `requirements.txt` berversi + notebook pipeline; "should not require any additional file to reproduce". Repo harus publik begitu kompetisi tutup (15 Nov 2026 23:59 CDT) dan tetap publik sampai pemenang diumumkan (30 Nov). Bobot tidak disebut eksplisit, tetapi prediksi harus reproducible tanpa file tambahan, jadi bobot praktis harus terjangkau. Rencana README (publikasi mendekati 15 Nov) konsisten; "publikasi hanya jika menang" berarti tidak dinilai.
+- **LB**: menampilkan ~50% gambar test; 5 submission/hari; pilih sampai 2 final submission, keduanya harus reproducible.
+- **Hadiah**: pool maks $3.000 untuk top-3 menurut skor rubrik; syarat: kode training+inference, laporan, lisensi OSI, bisa menjelaskan solusi.
+- **Data/pretraining**: data eksternal publik boleh; SSL pada GONG tak berlabel boleh (jangan mencakup test atau ±1 jam dari timestamp test; ungkapkan); pseudo-label/TTT pada gambar test tidak disebut eksplisit dan "extra information at inference" dilarang: **default jangan**.
 
 ## 8. Hal yang HARUS dicek dulu (tidak diketahui)
 
