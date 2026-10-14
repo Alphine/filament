@@ -1,0 +1,159 @@
+# HANDOFF — Solar Filament Segmentation 2026: strategi menuju Top 3
+
+Dokumen serah-terima untuk sesi Claude Code khusus. Baca seluruhnya sebelum menjalankan apa pun.
+Disusun 2026-10-14 dari `report/report.md`, `README.md`, dan git log repo ini (45 commit, terakhir 2026-10-03).
+Label: **[fakta]** = tercatat di repo/report; **[inferensi]** = kesimpulan penyusun, belum diuji; **[tidak diketahui]** = harus dicek.
+
+---
+
+## 0. Ringkasan satu paragraf
+
+Pipeline dua tahap (5-fold U-Net ResNet34 + crop refiner + near-limb filter + LightGBM instance scorer) mendapat **hold-out PQ 0.4427**, **OOF PQ 0.409**, tetapi **LB publik hanya 0.37**. Papan "valid" berakhir di **0.41** (2 tim), 0.40 (11 tim), 0.39 (21 tim). Di atasnya ada 52 tim di 0.49–0.62 yang dianggap invalid oleh organizer. Peringkat kita ~96 dari ~610 tim valid. Untuk Top 3 di LB valid diperlukan **≥0.41 (+0.04)**. Hampir semua lever pasca-proses sudah dicoba dan bernilai nol; bukti menunjuk ke **kualitas stage-A** dan ke **gap 0.04–0.05 antara OOF/hold-out dan LB yang belum dijelaskan**. Evaluasi final organizer = **kuantitatif + kualitatif**, jadi strategi dibagi dua track: (A) naikkan skor, (B) menangkan penilaian kualitatif.
+
+## 1. Kompetisi dan metrik
+
+- IEEE BigData Cup 2026 / Kaggle "Solar Filament Segmentation Challenge 2026"; data MAGFiLO (H-alpha GONG, 2048×2048). [fakta]
+- Train 707 gambar beranotasi, test 180 gambar. 296 gambar punya ≥2 pass anotator (~42%); ~58% hanya 1 pass. [fakta]
+- Metrik: PQ = Σ IoU(TP) / (|TP| + 0.5|FP| + 0.5|FN|), TP jika IoU>0.5, dihitung per pass anotator lalu di-pool. Implementasi: `filament_metric.py`. [fakta]
+- Konsekuensi: menyimpan satu instance hanya menguntungkan jika expected matched IoU > PQ/2 (~0.197). [fakta, dasar scorer]
+- Hold-out: 50 gambar, seed 1234, tidak dipakai training/seleksi checkpoint/refiner. SE bootstrap ≈ 0.017 (resolusi rendah). OOF: 657 gambar, tiap gambar dinilai fold model yang tidak melihatnya. [fakta]
+
+## 2. Status pipeline (rilis saat ini)
+
+1. **Stage-A**: 5 U-Net (smp, ResNet34 ImageNet), 1 per fold atas 657 gambar pool, 30 epoch × 220 step × batch 8, patch 512; TTA dihedral/flip. Kandidat = komponen terhubung `prob>0.4`, area 400–40000 px, mean prob ≥0.7.
+2. **Crop refiner**: crop 1.5× bbox → 512², input `[crop, CLAHE, seed]` seed = bbox + padding 40%; menggambar ulang mask. Satu-satunya perubahan dengan efek terukur: **+0.0177** hold-out PQ.
+3. **Near-limb filter**: buang instance dengan centroid > 0.88 radius disk (Otsu). OOF +0.0065, hold-out +0.0059. Dapat dimatikan dengan `Pipeline(limb_drop=None)`.
+4. **Instance scorer** (LightGBM, 36 fitur, dilatih pada 4,694 instance OOF, threshold tetap PQ/2=0.197): OOF 0.3944→0.4088 (+0.0144, CI95 +0.011..+0.018); hold-out 0.4383→0.4427 (n.s.). LB: 0.36→0.37.
+
+Tabel skor (hold-out / LB): proxy awal 0.3754 / 0.33; mix R34+R50 0.4030 / 0.34; refiner 0.4325 / 0.36; +scorer 0.4427 / 0.37. Urutan hold-out konsisten dengan urutan LB. [fakta]
+
+## 3. Peta lever: apa yang sudah dicoba
+
+| Percobaan | Hasil | Status |
+|---|---|---|
+| Refiner | +0.0177 hold-out | adopsi |
+| Near-limb drop t=0.88 | +0.0065 OOF | adopsi |
+| Instance scorer | +0.0144 OOF | adopsi |
+| EMA checkpoint (ensemble) | −0.010 hold-out; LB probe 0.36 (sama) | tidak |
+| Consensus target (5 fold) | tidak lebih baik | tidak |
+| Refiner gen-2 (Lovasz, EffNet-B3, crop TTA) | tidak ada gain (refiner jenuh) | tidak |
+| Spine multi-task stage-A | +0.0074 tanpa refiner, +0.0016 dengan refiner | tidak |
+| Hard-negative refiner | +0.0006 | noise |
+| Ensemble + Mask R-CNN publik | +0.0028 | tidak |
+| Filter "didukung ≥2 pass" (klasifier) | +0.0024 OOS (oracle +0.0132) | marginal |
+| Filter `std_views` | +0.0020 | marginal |
+| Re-tune threshold single-pass (300 konfigurasi) | +0.0003 | noise |
+| Loose candidates + scorer | +0.0040 OOF (<margin +0.005), −0.0028 hold-out | tidak |
+| Fitur refiner untuk scorer | −0.0005 OOF | tidak |
+| Per-instance mask-variant selection | −0.0013 OOF (oracle +0.0223 tak terkejar) | tidak |
+| Multi-scale TTA, single model OOF (0.75/1.0/1.25) | **+0.0117** (CI95 +0.0067..+0.0169) | positif |
+| Multi-scale TTA pada ensemble, hold-out | −0.0114 (CI95 −0.030..+0.005) | gate gagal, test tidak dijalankan |
+| Dilasi/erosi mask ±1px (probe LB) | 0.31 / 0.32 (cocok prediksi null) | konvensi label test = train |
+| Pretraining self-supervised GONG H-alpha | belum dilakukan; perkiraan 3–6 GPU-hari | di-skip |
+
+Pelajaran statistik [fakta]: dengan hold-out 50 gambar, SE paired ≈0.01, sehingga banyak hasil nol bersifat **tidak konklusif**, bukan negatif. Satu model tunggal OOF = 0.388 (rentang fold 0.372–0.407); ensemble menambah ~+0.026.
+
+## 4. Diagnosis: kenapa jauh dari top
+
+### 4.1 Gap tak terjelaskan OOF/hold-out → LB (≈0.04–0.05)
+- Expected recipe ≈ 0.41 (OOF 0.388 + ensemble ≈0.026), LB 0.37. [fakta]
+- Sudah dieliminasi: campuran tahun/situs observatorium (re-weight −0.002/−0.000), jumlah prediksi per gambar (7.5 test vs 8.4 hold-out vs GT 7.7), offset boundary ±1px (probe LB), single-pass vs multi-pass (OOF +0.010 n.s.). [fakta]
+- Petunjuk lemah: mask prediksi 14% lebih besar di test (median 1,320 vs 1,158 px); test punya 14% gambar 2019–2022. [fakta]
+- Hipotesis tersisa [inferensi]: distribusi anotator/gaya label berbeda pada test; jumlah pass anotator berbeda; sebagian gambar test di luar domain train. Hanya probe LB yang bisa menguji.
+
+### 4.2 Plafon label
+- Anotator vs anotator: PQ **0.340**, IoU matched 0.634; hanya 0.14% pasangan mencapai IoU 0.85. Pipeline (0.4427) sudah melampaui kesepakatan pasangan karena memprediksi rata-rata. [fakta]
+- 54% error = near-miss (overlap tapi IoU≤0.5). Oracle membuang instance di bawah break-even akan +0.074; scorer menangkap +0.014. [fakta]
+- Ini berarti ruang perbaikan nyata ada di **seleksi objek** dan **boundary konsensus**, bukan di refinement tambahan.
+
+### 4.3 Stage-A adalah bottleneck [inferensi dari fakta]
+Fitur refiner, loose candidates, dan variant selection semuanya nol sementara multi-scale pada single model memberi +0.0117. Artinya informasi pembeda TP/FP tidak ada di peta probabilitas stage-A saat ini; harus datang dari model yang berbeda/lebih baik atau dari konteks lebih luas.
+
+### 4.4 Struktur papan peringkat
+- 730 tim (27 Sep). 52 tim di 0.49–0.62 = kelompok invalid. 0.41 (2), 0.40 (11), 0.39 (21), 0.37 kita dibagi 67 tim. [fakta]
+- Organizer: skor semacam itu "tidak dianggap valid"; PQ>0.35 "of great value"; evaluasi final **bukan** berdasarkan skor LB, menggabungkan kriteria kuantitatif dan kualitatif (halaman Evaluation). [fakta]
+- Konsekuensi [inferensi]: LB hanya filter; peluang Top 3 sebenarnya ada di penilaian akhir, dan di sana kualitas laporan + reproducibility + legitimasi berbobot.
+
+## 5. Strategi
+
+### Track A — Kuantitatif (target realistis 0.385–0.41)
+
+Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**. Hold-out 50 gambar hanya sebagai sanity gate (tidak boleh turun >0.005). Tulis kriteria **sebelum** run (preregistration gaya repo ini). Satu submission LB per perubahan besar; jangan menyetel ke LB.
+
+**A1. Diagnosa gap LB (CPU, murah — kerjakan pertama).**
+- Bandingkan distribusi test vs OOF: area instance, jumlah instance per gambar, panjang spine, posisi radial, kontras lokal, tahun/situs per gambar. Cari subset test yang "tidak seperti" train (nearest-neighbour pada fitur gambar/prediksi).
+- Hitung PQ OOF yang diboboti ke distribusi test menggunakan fitur tambahan di atas (bukan hanya tahun/situs).
+- Keluaran: apakah gap bisa dikaitkan ke subset tertentu. Jika ya, lever training/threshold khusus subset itu.
+
+**A2. Stage-A lebih kuat (GPU, inti track).**
+- Konteks lebih besar: patch 768/1024 (sekarang 512) dengan batch/akumulasi gradient menyesuaikan. Dasar: multi-scale gain menunjukkan sensitivitas skala.
+- Diversitas encoder: ConvNeXt/EfficientNet-B3–B5/SegFormer (smp mendukung). Mix R34+R50 sebelumnya 0.34 LB pada proxy lama — ulangi dengan protokol OOF, bukan proxy.
+- Lebih banyak seed (10–15 model); estimasi gain ensemble marginal +0.003–0.006 [inferensi].
+- Evaluasi: OOF single-model dulu (baseline 0.388), lalu ensemble penuh. Gate: gain OOF ≥ +0.005 dengan CI95 > 0.
+
+**A3. Re-tune kandidat pada peta multi-scale (CPU setelah A2).**
+- Threshold kandidat saat ini disetel untuk peta single-scale; hold-out ensemble kehilangan recall pada 3-scale (TP 394→356). Re-tune `prob`, area, mean prob dan refit scorer pada peta multi-scale OOF single-model (satu-satunya yang punya 657 gambar). Fit scorer ulang karena kalibrasi probabilitas bergeser.
+
+**A4. Target konsensus pada subset multi-pass (GPU, satu percobaan terbatas).**
+- Simulasi leave-one-pass-out: objek yang ditandai ≥2 pass dengan bentuk union = +0.0145 (CI +0.006..+0.023). Pilot fold-1 sebelumnya "tidak lebih baik". Coba hanya pada 296 gambar multi-pass sebagai fine-tune, dievaluasi OOF; jika tidak lulus gate, hentikan.
+
+**A5. Hal yang jangan diulang** (sudah mati, lihat §3): refiner gen-2, spine multi-task, variant selection, loose candidates tanpa re-tune multi-scale, EMA ensemble, fitur refiner untuk scorer, Mask R-CNN publik.
+
+**A6. Opsional berisiko tinggi.** Pretraining self-supervised pada GONG H-alpha tak berlabel: diizinkan organizer selama hanya untuk training (forum 737215, 744047), tapi 3–6 GPU-hari. Lakukan hanya jika A1 menunjukkan pergeseran domain atau tersisa waktu >1 minggu.
+
+### Track B — Kualitatif (di sini peluang Top 3 paling nyata)
+
+1. **Klaim tunggal yang tajam** di abstrak: skor dibatasi oleh kesepakatan anotator (PQ 0.34); aturan break-even PQ/2 menghasilkan scorer yang +0.014 OOF tanpa tuning; boundary berada di optimum tajam (±1px = −0.04..−0.05).
+2. **Pulihkan reproducibility**: bobot dan notebook di-*unpublish* pada 2026-09-23. Setelah submission final, publikasikan kembali (Apache-2.0) dengan `requirements.txt` terpin dan tautan di laporan.
+3. **Laporan 4 halaman template ACM** (`report/overleaf/`): masukkan skor LB final, hasil A1–A4 (termasuk negatif), dan satu tabel "apa yang membatasi" (annotator ceiling, error decomposition 54% near-miss).
+4. **Pertahankan sikap legitimasi**: §7–§8 report (tidak mengejar ujung atas LB, tidak memakai anotasi di luar kompetisi, tidak memakai isi notebook pre-computed). Ini nilai plus pada penilaian kualitatif.
+5. Figur kualitatif sudah ada (`report/figures/fig_morph_*.png`); tambahkan kegagalan-kasus terbaik dan satu demonstrasi scorer (instance yang dibuang vs dipertahankan).
+
+## 6. Batasan dan aturan keras
+
+- **Jangan** memakai rilis publik MAGFiLO yang menurut forum memuat anotasi gambar test (topik 728062, 737177, 741892), file submission pihak ketiga, maupun isi notebook pre-computed. Organizer menyatakan submission semacam itu didiskualifikasi (topik 729396). [fakta]
+- Pseudo-labeling pada 180 gambar test: **cek aturan** sebelum dipakai; default = jangan.
+- Gate preregistered: tulis hipotesis, metrik, dan ambang keputusan di commit sebelum menjalankan; catat hasil negatif di `report/report.md` §4.
+- Satu ide per percobaan; jangan menumpuk perubahan sebelum masing-masing lulus gate.
+- Jangan menghapus artefak OOF/hasil di `analysis/results/` (dipakai semua analisis).
+
+## 7. Peta file
+
+```
+filament_pipeline.py      inferensi (model, TTA, kandidat, refiner, near-limb, RLE, validasi format)
+filament_scorer.py        fitur instance + aturan keep/drop; models/ berisi LightGBM + threshold
+filament_metric.py        PQ resmi per pass anotator; hold-out tetap (seed 1234)
+pipeline.ipynb            notebook end-to-end -> submission.csv
+training/                 filament_unet_ensemble.py, filament_refiner.py, *_gen2/spine/consensus/ckpt_selection/resample_stagea
+analysis/scripts/         filament_*_cpu.py / *_gpu.py (kernel), analyze_*.py (analisis lokal, baca analysis/results/)
+analysis/results/         keluaran studi (OOF counts, instance, dst.)
+report/report.md          laporan teknis panjang (semua temuan)
+report/overleaf/          laporan 4 halaman ACM + zip Overleaf
+tests/                    pytest: metrik, kandidat, near-limb, submission, scorer
+```
+
+Perintah uji: `python -m pytest tests`.
+
+## 8. Hal yang HARUS dicek dulu (tidak diketahui)
+
+1. **Deadline** submission final dan deadline laporan — tidak tercatat di repo. Menentukan apakah A2/A6 realistis.
+2. **Batas submission harian** dan **sisa kuota GPU Kaggle** (T4; multi-scale OOF memakai ~114 menit dua kernel; ensemble 50 gambar 29 menit).
+3. **Posisi LB terkini** dan apakah papan sudah direfresh organizer (kelompok invalid masih ada?).
+4. Aturan resmi tentang pseudo-label/test-time training dan batas penggunaan model pre-trained eksternal.
+5. Apakah "final submission" dipilih manual (maks N) atau otomatis — pilih berdasarkan OOF + hold-out, bukan LB tertinggi.
+
+## 9. Urutan kerja yang disarankan untuk sesi baru
+
+1. Baca `report/report.md` §3–§5 dan §7; jalankan `python -m pytest tests`.
+2. Selesaikan §8 (deadline, kuota).
+3. A1 (CPU) → tulis temuan ke `analysis/` + ringkasan di report.
+4. Rancang A2 sebagai preregistration (satu varian per kernel, OOF 657), jalankan varian termurah dulu (patch 768 pada satu fold sebagai pilot).
+5. A3 setelah ada peta multi-scale; A4 jika sisa waktu.
+6. Satu probe LB per lulus gate; catat semua hasil.
+7. Track B paralel: pulihkan bobot/notebook, perbarui laporan ACM, lalu final selection.
+
+## 10. Ekspektasi yang jujur
+
+- Top 3 di LB valid (≥0.41): peluang rendah (perkiraan ≈10–15% [inferensi]); butuh menumpuk beberapa gain +0.005–0.015 yang masing-masing tidak terbukti pada ensemble.
+- Skor 0.385–0.395 realistis jika A2+A3 berhasil, menaikkan peringkat valid dari ~96 ke sekitar 30–40 [inferensi].
+- Nilai tambah terbesar per jam kerja ada di Track B dan di A1 (menjelaskan gap), karena keduanya bukan sekadar menyetel ke LB dan menarik di penilaian kualitatif.
