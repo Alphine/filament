@@ -59,6 +59,7 @@ Pelajaran statistik [fakta]: dengan hold-out 50 gambar, SE paired ≈0.01, sehin
 - Expected recipe ≈ 0.41 (OOF 0.388 + ensemble ≈0.026), LB 0.37. [fakta]
 - Sudah dieliminasi: campuran tahun/situs observatorium (re-weight −0.002/−0.000), jumlah prediksi per gambar (7.5 test vs 8.4 hold-out vs GT 7.7), offset boundary ±1px (probe LB), single-pass vs multi-pass (OOF +0.010 n.s.). [fakta]
 - Petunjuk lemah: mask prediksi 14% lebih besar di test (median 1,320 vs 1,158 px); test punya 14% gambar 2019–2022. [fakta]
+- **Hasil A1 (14 Okt, `analysis/scripts/analyze_shift_a1.py`)** [fakta]: tidak ada pergeseran yang terlihat pipeline (AUC test-vs-OOF pada fitur geometri/citra 0.509, dalam rentang permutasi 0.44-0.56). Pembobotan OOF ke distribusi test menggeser PQ 0.4088 -> 0.4142 (menjauh dari LB). Gap tidak dijelaskan oleh kovariat yang teramati; sisanya adalah hal yang tak terlihat dari prediksi (gaya/jumlah pass anotator di label test, derau skor LB publik). Rincian: report.md §4.
 - Hipotesis tersisa [inferensi]: distribusi anotator/gaya label berbeda pada test; jumlah pass anotator berbeda; sebagian gambar test di luar domain train. Hanya probe LB yang bisa menguji.
 
 ### 4.2 Plafon label

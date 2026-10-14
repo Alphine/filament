@@ -1,0 +1,69 @@
+{
+ "n_images": {
+  "oof": 657,
+  "hold": 50,
+  "test": 180
+ },
+ "adv_geo_test_vs_oof": {
+  "auc": 0.5092,
+  "perm_min": 0.4396,
+  "perm_max": 0.5572,
+  "top": [
+   "img_pred_area",
+   "n_inst",
+   "refined_ratio",
+   "ring_std",
+   "nn_dist"
+  ]
+ },
+ "adv_all_test_vs_oof": {
+  "auc": 0.7596,
+  "perm_min": 0.4558,
+  "perm_max": 0.5545,
+  "top": [
+   "img_mean_p",
+   "max_p",
+   "img_pred_area",
+   "p50_p",
+   "n_inst"
+  ]
+ },
+ "adv_all_test_vs_hold": {
+  "auc": 0.404,
+  "perm_min": 0.3603,
+  "perm_max": 0.6375,
+  "top": [
+   "img_pred_area",
+   "img_mean_p",
+   "n_inst",
+   "nn_area",
+   "ring_std"
+  ]
+ },
+ "shift_verdict": "NO SHIFT",
+ "weighted_oof": {
+  "unweighted": 0.4088,
+  "weighted": 0.4142,
+  "ci95": [
+   0.4045,
+   0.4237
+  ],
+  "effective_n": 590.5,
+  "verdict": "NOT EXPLAINED",
+  "image_level_auc": 0.591
+ },
+ "scorer_view": {
+  "test": [
+   0.391,
+   0.855
+  ],
+  "hold": [
+   0.404,
+   0.872
+  ],
+  "oof_cv": [
+   0.395,
+   0.84
+  ]
+ }
+}

@@ -160,9 +160,10 @@ for nm, rs in (('out-of-fold', oof), ('hold-out', hold), ('test', test)):
 
 # scorer view
 bst = lgb.Booster(model_file='models/instance_scorer.txt')
-names = bst.feature_name()
+names = feats                      # the booster stores generic names (Column_N); its order is the table order
+assert bst.num_feature() == len(names), (bst.num_feature(), len(names))
 Xt, _ = mat(test, names); Xh, _ = mat(hold, names)
-pt, ph = bst.predict(Xt), bst.predict(mat(oof, names)[0] * 0 + mat(hold, names)[0].mean(0)[None, :]) if False else bst.predict(Xh)
+pt, ph = bst.predict(Xt), bst.predict(Xh)
 print(f'scorer: mean predicted matched IoU / kept share at 0.197: test {pt.mean():.3f} / {np.mean(pt >= 0.197):.2f}; '
       f'hold-out {ph.mean():.3f} / {np.mean(ph >= 0.197):.2f}; out-of-fold (cv) {pred.mean():.3f} / {keep.mean():.2f}')
 out['scorer_view'] = {'test': [round(float(pt.mean()), 3), round(float(np.mean(pt >= 0.197)), 3)],
