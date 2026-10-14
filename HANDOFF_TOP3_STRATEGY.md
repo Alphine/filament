@@ -150,6 +150,26 @@ Perintah uji: `python -m pytest tests`.
 - **Hadiah**: pool maks $3.000 untuk top-3 menurut skor rubrik; syarat: kode training+inference, laporan, lisensi OSI, bisa menjelaskan solusi.
 - **Data/pretraining**: data eksternal publik boleh; SSL pada GONG tak berlabel boleh (jangan mencakup test atau ±1 jam dari timestamp test; ungkapkan); pseudo-label/TTT pada gambar test tidak disebut eksplisit dan "extra information at inference" dilarang: **default jangan**.
 
+## 7c. Metrik rubrik selain PQ (dihitung 14 Okt; `analysis/scripts/analyze_rubric.py`, `analysis/results/rubric_summary.json`)
+
+Definisi dari notebook self-evaluation organizer (matriks IoU/Dice berpasangan GT x prediksi per anotator-gambar; distribusi hanya pasangan skor > 0; one-to-many / many-to-one = jumlah mitra dengan IoU > 0). Konfigurasi `torchmetrics DiceScore` **tidak dinyatakan**; kami melaporkan Dice foreground (gabungan mask) per gambar, plus varian macro dan micro.
+
+| | OOF 657 | hold-out 50 |
+|---|---|---|
+| PQ (near-limb + scorer) | 0.4088 | 0.4423 (report §4: 0.4427, selisih 0.0004 tak ditelusuri) |
+| Mean Dice per gambar | 0.624 | 0.663 |
+| Mean Dice tanpa scorer | 0.6326 | 0.6758 |
+| Selisih Dice karena scorer | -0.0084 (CI95 -0.014..-0.0035) | -0.0126 (CI95 -0.021..-0.005) |
+| GT tanpa prediksi (1:0) | 26.8% | 24.4% |
+| Prediksi tanpa GT (0:1) | 12.3% | 10.0% |
+| Prediksi menyentuh >= 2 GT | 2.4% | 1.9% |
+| GT terpecah menjadi >= 2 prediksi | 3.4% | 3.7% |
+
+- **Temuan**: scorer menaikkan PQ (+0.0144) tetapi menurunkan Dice (-0.0084) karena membuang 16% instance. Sapuan ambang di OOF (PQ / Dice): 0.10: 0.4022 / 0.6320; 0.15: 0.4063 / 0.6313; **0.197: 0.4088 / 0.6241**; 0.25: 0.4069 / 0.6123. Dice jatuh di antara ambang 0.15 dan 0.25.
+- Bobot Dice vs PQ dalam rubrik tidak dipublikasikan, sehingga ambang yang cocok untuk evaluasi final tidak bisa diturunkan; 0.197 adalah optimum PQ. Dengan bobot sama, ambang ~0.15 lebih baik sekitar +0.005 pada jumlah PQ+Dice (seleksi satu parameter pada OOF yang sama; tanpa konfirmasi held-out).
+- Over-merging jarang (2.4%) dan fragmentasi kecil (3.4%); yang dominan adalah miss.
+- Dua final submission diperbolehkan, tetapi host menyarankan menggabungkannya menjadi satu strategi (forum 747960; keduanya harus reproducible). Pilihan kandidat: ambang 0.197 (PQ) vs 0.15 (seimbang).
+
 ## 8. Hal yang HARUS dicek dulu (tidak diketahui)
 
 1. **Deadline** submission final: **15 Nov 2026** (README baris 50; sisa 32 hari per 2026-10-14). Deadline laporan terpisah: **[tidak diketahui]**, cek. Dengan 32 hari dan kuota GPU bersama, A6 tidak mungkin dan A2 dibatasi 2-3 varian.

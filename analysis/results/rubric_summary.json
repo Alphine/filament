@@ -1,0 +1,421 @@
+{
+ "near-limb only | out-of-fold 657": {
+  "pq": 0.3944,
+  "n_annotator_images": 1075,
+  "n_images": 657,
+  "dice_fg_per_annotator_image": 0.6363,
+  "dice_fg_per_image": 0.6326,
+  "dice_fg_per_image_ci95": [
+   0.6195,
+   0.6451
+  ],
+  "dice_macro": 0.8176,
+  "pixel_accuracy": 0.9978,
+  "pairwise_iou": {
+   "n": 6485,
+   "mean": 0.5596,
+   "quartiles": [
+    0.441,
+    0.6173,
+    0.7107
+   ],
+   "hist10": [
+    167,
+    342,
+    395,
+    463,
+    628,
+    1009,
+    1669,
+    1536,
+    276,
+    0
+   ]
+  },
+  "pairwise_dice": {
+   "n": 6485,
+   "mean": 0.6935,
+   "quartiles": [
+    0.612,
+    0.7634,
+    0.8309
+   ],
+   "hist10": [
+    48,
+    152,
+    216,
+    280,
+    337,
+    507,
+    762,
+    1760,
+    2285,
+    138
+   ]
+  },
+  "one_to_many_per_gt": {
+   "1:0 (GT missed)": [
+    1560,
+    20.6
+   ],
+   "1:1": [
+    5641,
+    74.3
+   ],
+   "1:2": [
+    331,
+    4.4
+   ],
+   "1:3+": [
+    56,
+    0.7
+   ]
+  },
+  "many_to_one_per_pred": {
+   "0:1 (false positive)": [
+    1407,
+    18.2
+   ],
+   "1:1": [
+    6146,
+    79.6
+   ],
+   "2:1": [
+    153,
+    2.0
+   ],
+   "3+:1": [
+    11,
+    0.1
+   ]
+  }
+ },
+ "near-limb only | hold-out 50": {
+  "pq": 0.4383,
+  "n_annotator_images": 79,
+  "n_images": 50,
+  "dice_fg_per_annotator_image": 0.6866,
+  "dice_fg_per_image": 0.6758,
+  "dice_fg_per_image_ci95": [
+   0.6339,
+   0.7106
+  ],
+  "dice_macro": 0.8428,
+  "pixel_accuracy": 0.9979,
+  "pairwise_iou": {
+   "n": 538,
+   "mean": 0.5755,
+   "quartiles": [
+    0.4842,
+    0.6336,
+    0.72
+   ],
+   "hist10": [
+    13,
+    23,
+    30,
+    41,
+    35,
+    91,
+    137,
+    144,
+    24,
+    0
+   ]
+  },
+  "pairwise_dice": {
+   "n": 538,
+   "mean": 0.7081,
+   "quartiles": [
+    0.6524,
+    0.7757,
+    0.8372
+   ],
+   "hist10": [
+    4,
+    12,
+    14,
+    17,
+    37,
+    30,
+    56,
+    146,
+    209,
+    13
+   ]
+  },
+  "one_to_many_per_gt": {
+   "1:0 (GT missed)": [
+    108,
+    17.7
+   ],
+   "1:1": [
+    471,
+    77.1
+   ],
+   "1:2": [
+    29,
+    4.7
+   ],
+   "1:3+": [
+    3,
+    0.5
+   ]
+  },
+  "many_to_one_per_pred": {
+   "0:1 (false positive)": [
+    78,
+    12.9
+   ],
+   "1:1": [
+    513,
+    85.1
+   ],
+   "2:1": [
+    11,
+    1.8
+   ],
+   "3+:1": [
+    1,
+    0.2
+   ]
+  }
+ },
+ "released pipeline (near-limb + scorer) | out-of-fold 657": {
+  "pq": 0.4088,
+  "n_annotator_images": 1075,
+  "n_images": 657,
+  "dice_fg_per_annotator_image": 0.6303,
+  "dice_fg_per_image": 0.6241,
+  "dice_fg_per_image_ci95": [
+   0.6104,
+   0.6371
+  ],
+  "dice_macro": 0.8146,
+  "pixel_accuracy": 0.9978,
+  "pairwise_iou": {
+   "n": 5840,
+   "mean": 0.5783,
+   "quartiles": [
+    0.4802,
+    0.63,
+    0.7162
+   ],
+   "hist10": [
+    95,
+    246,
+    314,
+    380,
+    538,
+    930,
+    1581,
+    1490,
+    266,
+    0
+   ]
+  },
+  "pairwise_dice": {
+   "n": 5840,
+   "mean": 0.7123,
+   "quartiles": [
+    0.6489,
+    0.773,
+    0.8346
+   ],
+   "hist10": [
+    28,
+    89,
+    149,
+    218,
+    274,
+    423,
+    666,
+    1656,
+    2204,
+    133
+   ]
+  },
+  "one_to_many_per_gt": {
+   "1:0 (GT missed)": [
+    2034,
+    26.8
+   ],
+   "1:1": [
+    5297,
+    69.8
+   ],
+   "1:2": [
+    232,
+    3.1
+   ],
+   "1:3+": [
+    25,
+    0.3
+   ]
+  },
+  "many_to_one_per_pred": {
+   "0:1 (false positive)": [
+    799,
+    12.3
+   ],
+   "1:1": [
+    5525,
+    85.3
+   ],
+   "2:1": [
+    147,
+    2.3
+   ],
+   "3+:1": [
+    7,
+    0.1
+   ]
+  }
+ },
+ "released pipeline (near-limb + scorer) | hold-out 50": {
+  "pq": 0.4423,
+  "n_annotator_images": 79,
+  "n_images": 50,
+  "dice_fg_per_annotator_image": 0.6763,
+  "dice_fg_per_image": 0.6632,
+  "dice_fg_per_image_ci95": [
+   0.6182,
+   0.6992
+  ],
+  "dice_macro": 0.8376,
+  "pixel_accuracy": 0.9979,
+  "pairwise_iou": {
+   "n": 487,
+   "mean": 0.5928,
+   "quartiles": [
+    0.5102,
+    0.6453,
+    0.7269
+   ],
+   "hist10": [
+    8,
+    16,
+    24,
+    35,
+    32,
+    78,
+    130,
+    140,
+    24,
+    0
+   ]
+  },
+  "pairwise_dice": {
+   "n": 487,
+   "mean": 0.7248,
+   "quartiles": [
+    0.6757,
+    0.7845,
+    0.8418
+   ],
+   "hist10": [
+    2,
+    8,
+    8,
+    16,
+    30,
+    26,
+    47,
+    132,
+    205,
+    13
+   ]
+  },
+  "one_to_many_per_gt": {
+   "1:0 (GT missed)": [
+    149,
+    24.4
+   ],
+   "1:1": [
+    439,
+    71.8
+   ],
+   "1:2": [
+    21,
+    3.4
+   ],
+   "1:3+": [
+    2,
+    0.3
+   ]
+  },
+  "many_to_one_per_pred": {
+   "0:1 (false positive)": [
+    53,
+    10.0
+   ],
+   "1:1": [
+    466,
+    88.1
+   ],
+   "2:1": [
+    9,
+    1.7
+   ],
+   "3+:1": [
+    1,
+    0.2
+   ]
+  }
+ },
+ "scorer_dice_effect | out-of-fold 657": {
+  "without": 0.6326,
+  "with": 0.6241,
+  "diff": -0.0084,
+  "ci95": [
+   -0.0141,
+   -0.0035
+  ]
+ },
+ "scorer_dice_effect | hold-out 50": {
+  "without": 0.6758,
+  "with": 0.6632,
+  "diff": -0.0126,
+  "ci95": [
+   -0.0209,
+   -0.0051
+  ]
+ },
+ "threshold_sweep_oof": {
+  "0.0": {
+   "pq": 0.396,
+   "dice_img": 0.6329,
+   "kept_share": 0.99
+  },
+  "0.05": {
+   "pq": 0.3986,
+   "dice_img": 0.6331,
+   "kept_share": 0.973
+  },
+  "0.1": {
+   "pq": 0.4022,
+   "dice_img": 0.632,
+   "kept_share": 0.942
+  },
+  "0.15": {
+   "pq": 0.4063,
+   "dice_img": 0.6313,
+   "kept_share": 0.897
+  },
+  "0.197": {
+   "pq": 0.4088,
+   "dice_img": 0.6241,
+   "kept_share": 0.84
+  },
+  "0.25": {
+   "pq": 0.4069,
+   "dice_img": 0.6123,
+   "kept_share": 0.768
+  },
+  "0.3": {
+   "pq": 0.4008,
+   "dice_img": 0.5954,
+   "kept_share": 0.69
+  }
+ }
+}
