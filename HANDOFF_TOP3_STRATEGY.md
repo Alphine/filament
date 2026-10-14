@@ -49,6 +49,7 @@ Tabel skor (hold-out / LB): proxy awal 0.3754 / 0.33; mix R34+R50 0.4030 / 0.34;
 | Multi-scale TTA, single model OOF (0.75/1.0/1.25) | **+0.0117** (CI95 +0.0067..+0.0169) | positif |
 | Multi-scale TTA pada ensemble, hold-out | −0.0114 (CI95 −0.030..+0.005) | gate gagal, test tidak dijalankan |
 | Dilasi/erosi mask ±1px (probe LB) | 0.31 / 0.32 (cocok prediksi null) | konvensi label test = train |
+| Resampling patch per epoch (1.760 patch unik -> baru tiap epoch), 5 fold, 557 gambar | **-0.0202** (CI95 -0.027..-0.014); semua fold turun; FP +42% | tidak (gate gagal) |
 | Pretraining self-supervised GONG H-alpha | belum dilakukan; perkiraan 3–6 GPU-jam + fine-tuning (report.md:99) | di-skip (peluang gain ≥0.01 <20%) |
 
 Pelajaran statistik [fakta]: dengan hold-out 50 gambar, SE paired ≈0.01, sehingga banyak hasil nol bersifat **tidak konklusif**, bukan negatif. Satu model tunggal OOF = 0.388 (rentang fold 0.372–0.407); ensemble menambah ~+0.026.
@@ -87,6 +88,7 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 - Keluaran: apakah gap bisa dikaitkan ke subset tertentu. Jika ya, lever training/threshold khusus subset itu.
 
 **A2-0. Resampling patch per epoch (E1; lever termurah, terlewat di versi awal dokumen ini).** report.md:64 (ditemukan 30 Sep, belum diuji) dan kode (`training/filament_unet_ensemble.py:210`, generator di-seed hanya oleh indeks sampel; DataLoader tanpa shuffle) menunjukkan 30 epoch hanya melihat **1.760 patch unik** (52.800 draw). Skrip siap: `training/filament_resample_stagea.py` (fail-fast, stop-on-error, checkpoint, time budget) + `analysis/scripts/analyze_resample.py`. Gate terkunci di skrip: gain gabungan 5 fold dengan refiner >= +0.005 dengan CI95 > 0 terhadap **baseline EMA ckpt_selection (0.3998 pada 557 gambar)**, lalu hold-out ensemble tidak lebih rendah dari ensemble EMA. Biaya ~25-35 menit T4 per fold, ~3 jam + skoring. Jangan pilot 1 fold (pilot +0.0144 menjadi +0.0023 pada 5 fold, report.md:40-42). Gain diharapkan menyusut di ensemble (EMA +0.0144 -> +0.0032; spine +0.0074 -> +0.0016) [inferensi agen tinjauan, belum diverifikasi]. Baseline untuk semua varian A2 = EMA ckpt_selection, bukan "0.388".
+**HASIL (14 Okt): DITOLAK.** 5 fold, 557 gambar: EMA 0.3998 -> 0.3796 (-0.0202, CI95 -0.0269..-0.0136); last 0.3977 -> 0.3783; tanpa refiner -0.0337; semua fold turun. TP naik (3.934 -> 4.166) tetapi FP naik jauh lebih banyak (2.909 -> 4.121): ambang kandidat, refiner, dan scorer yang disetel pada model lama tidak cocok dengan peta model baru. Tidak diuji ulang dengan ambang baru (butuh inferensi GPU lagi; defisit -0.02 membuat gain bersih tidak mungkin). Biaya: 2.7 jam T4. Rincian: report.md §4.
 
 **A2. Stage-A lebih kuat (GPU, inti track).**
 - Konteks lebih besar: patch 768/1024 (sekarang 512) dengan batch/akumulasi gradient menyesuaikan. Dasar: multi-scale gain menunjukkan sensitivitas skala.
@@ -101,7 +103,7 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 **A4. Target konsensus pada subset multi-pass (GPU, satu percobaan terbatas).**
 - Simulasi leave-one-pass-out: objek yang ditandai ≥2 pass dengan bentuk union = +0.0145 (CI +0.006..+0.023). Pilot fold-1 sebelumnya "tidak lebih baik". Coba hanya pada 296 gambar multi-pass sebagai fine-tune, dievaluasi OOF; jika tidak lulus gate, hentikan.
 
-**A5. Hal yang jangan diulang** (sudah mati, lihat §3): refiner gen-2, spine multi-task, variant selection, loose candidates tanpa re-tune multi-scale, EMA ensemble, fitur refiner untuk scorer, Mask R-CNN publik.
+**A5. Hal yang jangan diulang** (sudah mati, lihat §3): resampling patch per epoch (A2-0), refiner gen-2, spine multi-task, variant selection, loose candidates tanpa re-tune multi-scale, EMA ensemble, fitur refiner untuk scorer, Mask R-CNN publik.
 
 **A6. Prioritas rendah (bukan mustahil).** Pretraining self-supervised pada GONG H-alpha tak berlabel diizinkan organizer (forum 737215, 744047; gambar tak berlabel tidak boleh mencakup test atau ±1 jam dari timestamp test, forum 748045; wajib diungkap di laporan). Biaya menurut report.md:99-100: sekitar **3-6 GPU-jam** plus fine-tuning (koreksi: versi awal dokumen ini salah menulis "GPU-hari"). Report menilai peluang gain ≥0.01 di bawah 20% dan tidak ada bukti publik bahwa ini mengalahkan inisialisasi ImageNet untuk H-alpha. Kerjakan hanya setelah E1 (A2-0) selesai dan masih ada kuota.
 

@@ -1,0 +1,68 @@
+{
+ "folds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "rules": {
+  "ema_with_refiner": {
+   "baseline": 0.3998,
+   "resampled": 0.3796,
+   "diff": -0.0202,
+   "ci95": [
+    -0.0269,
+    -0.0136
+   ],
+   "n": 557,
+   "fold_sd": [
+    0.0071,
+    0.0081
+   ]
+  },
+  "ema_without_refiner": {
+   "baseline": 0.3639,
+   "resampled": 0.3302,
+   "diff": -0.0337,
+   "ci95": [
+    -0.0398,
+    -0.0273
+   ],
+   "n": 557,
+   "fold_sd": [
+    0.0029,
+    0.0067
+   ]
+  },
+  "last_with_refiner": {
+   "baseline": 0.3977,
+   "resampled": 0.3783,
+   "diff": -0.0194,
+   "ci95": [
+    -0.026,
+    -0.0123
+   ],
+   "n": 557,
+   "fold_sd": [
+    0.0092,
+    0.0079
+   ]
+  },
+  "last_without_refiner": {
+   "baseline": 0.3621,
+   "resampled": 0.3335,
+   "diff": -0.0285,
+   "ci95": [
+    -0.0351,
+    -0.0219
+   ],
+   "n": 557,
+   "fold_sd": [
+    0.0067,
+    0.008
+   ]
+  }
+ },
+ "verdict": "NOT ADOPTED (gain < +0.005 or CI includes 0)"
+}
