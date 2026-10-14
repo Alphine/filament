@@ -108,7 +108,7 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 ### Track B — Kualitatif (di sini peluang Top 3 paling nyata)
 
 1. **Klaim tunggal yang tajam** di abstrak: skor dibatasi oleh kesepakatan anotator (PQ 0.34); aturan break-even PQ/2 menghasilkan scorer yang +0.014 OOF tanpa tuning; boundary berada di optimum tajam (±1px = −0.04..−0.05).
-2. **Pulihkan reproducibility**: bobot dan notebook di-*unpublish* pada 2026-09-23. Setelah submission final, publikasikan kembali (Apache-2.0) dengan `requirements.txt` terpin dan tautan di laporan.
+2. **Reproducibility (BERSYARAT, keputusan pemilik repo)**: kode sudah publik (Apache-2.0); bobot sengaja ditahan sejak 2026-09-23 (README "Weights availability": tidak dipublikasikan sampai mendekati 15 Nov agar kompetitor tidak membangun di atas checkpoint ini). Tidak ada bukti di repo bahwa organizer mewajibkan publikasi bobot; **[tidak diketahui]**, cek aturan/halaman Evaluation sebelum memutuskan. Jika wajib: publikasikan setelah submission final dengan `requirements.txt` terpin dan tautan di laporan (atau serahkan privat ke juri jika diterima). Jika tidak wajib: tahan bobot, simpan `SHA256SUMS.txt` sebagai bukti keaslian. Memublikasikan adalah tindakan ke luar yang tidak bisa ditarik kembali; butuh persetujuan eksplisit pemilik.
 3. **Laporan 4 halaman template ACM** (`report/overleaf/`): masukkan skor LB final, hasil A1–A4 (termasuk negatif), dan satu tabel "apa yang membatasi" (annotator ceiling, error decomposition 54% near-miss).
 4. **Pertahankan sikap legitimasi**: §7–§8 report (tidak mengejar ujung atas LB, tidak memakai anotasi di luar kompetisi, tidak memakai isi notebook pre-computed). Ini nilai plus pada penilaian kualitatif.
 5. Figur kualitatif sudah ada (`report/figures/fig_morph_*.png`); tambahkan kegagalan-kasus terbaik dan satu demonstrasi scorer (instance yang dibuang vs dipertahankan).
@@ -156,7 +156,7 @@ Perintah uji: `python -m pytest tests`.
 4. Rancang A2 sebagai preregistration (satu varian per kernel, OOF 657), jalankan varian termurah dulu (patch 768 pada satu fold sebagai pilot).
 5. A3 setelah ada peta multi-scale; A4 jika sisa waktu.
 6. Satu probe LB per lulus gate; catat semua hasil.
-7. Track B paralel: pulihkan bobot/notebook, perbarui laporan ACM, lalu final selection.
+7. Track B paralel: cek aturan publikasi bobot (B-2, bersyarat), perbarui laporan ACM, lalu final selection.
 
 ## 10. Ekspektasi yang jujur
 
