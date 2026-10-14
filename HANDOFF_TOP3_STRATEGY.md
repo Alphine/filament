@@ -93,13 +93,16 @@ Aturan umum: semua keputusan di **OOF 657 gambar, paired bootstrap per gambar**.
 
 **A3. Re-tune kandidat pada peta multi-scale (CPU setelah A2).**
 - Threshold kandidat saat ini disetel untuk peta single-scale; hold-out ensemble kehilangan recall pada 3-scale (TP 394→356). Re-tune `prob`, area, mean prob dan refit scorer pada peta multi-scale OOF single-model (satu-satunya yang punya 657 gambar). Fit scorer ulang karena kalibrasi probabilitas bergeser.
+**Peringatan:** gain multi-scale tidak berpindah ke ensemble (hold-out -0.0114); kemungkinan ensemble 20 prediksi sudah membuang varians yang sama [inferensi]. Nilai harapan A3 untuk ensemble rendah; jalankan hanya jika A2 menghasilkan model tunggal baru yang butuh ambang baru. Hal yang sama berlaku untuk "lebih banyak seed" di A2.
 
 **A4. Target konsensus pada subset multi-pass (GPU, satu percobaan terbatas).**
 - Simulasi leave-one-pass-out: objek yang ditandai ≥2 pass dengan bentuk union = +0.0145 (CI +0.006..+0.023). Pilot fold-1 sebelumnya "tidak lebih baik". Coba hanya pada 296 gambar multi-pass sebagai fine-tune, dievaluasi OOF; jika tidak lulus gate, hentikan.
 
 **A5. Hal yang jangan diulang** (sudah mati, lihat §3): refiner gen-2, spine multi-task, variant selection, loose candidates tanpa re-tune multi-scale, EMA ensemble, fitur refiner untuk scorer, Mask R-CNN publik.
 
-**A6. Opsional berisiko tinggi.** Pretraining self-supervised pada GONG H-alpha tak berlabel: diizinkan organizer selama hanya untuk training (forum 737215, 744047), tapi 3–6 GPU-hari. Lakukan hanya jika A1 menunjukkan pergeseran domain atau tersisa waktu >1 minggu.
+**A6. Dicoret (tidak layak).** Pretraining self-supervised pada GONG H-alpha tak berlabel diizinkan organizer selama hanya untuk training (forum 737215, 744047), tetapi 3-6 GPU-hari = 72-144 jam, melebihi kuota 40 jam yang dibagi dengan riset lain, dan deadline 15 Nov.
+
+**Anggaran GPU A2 [inferensi dari ~35 menit/fold pada patch 512]:** satu varian dengan OOF 5 fold ~3 jam T4 (patch 512) sampai ~3-7 jam (patch 768). Kuota hanya cukup untuk 2-3 varian. Jalankan satu per satu dan mintalah izin per kernel.
 
 ### Track B — Kualitatif (di sini peluang Top 3 paling nyata)
 
@@ -136,7 +139,9 @@ Perintah uji: `python -m pytest tests`.
 
 ## 8. Hal yang HARUS dicek dulu (tidak diketahui)
 
-1. **Deadline** submission final dan deadline laporan — tidak tercatat di repo. Menentukan apakah A2/A6 realistis.
+1. **Deadline** submission final: **15 Nov 2026** (README baris 50; sisa 32 hari per 2026-10-14). Deadline laporan terpisah: **[tidak diketahui]**, cek. Dengan 32 hari dan kuota GPU bersama, A6 tidak mungkin dan A2 dibatasi 2-3 varian.
+1a. **Porsi LB publik** dari 180 gambar test dan batas submission harian: **[tidak diketahui]**, cek di halaman kompetisi. Jika porsinya kecil, SE LB publik sebanding dengan hold-out (~0.017) dan skor dibulatkan ke 0.01, sehingga probe LB tidak bisa mendeteksi gain di bawah ~0.01-0.02. Keputusan tetap di OOF; LB hanya sanity check.
+1b. **Bobot tidak ada di repo/laptop** (`models/` hanya scorer). Ambil dari output kernel Kaggle `filament-unet-ensemble-5fold` dan `filament-crop-refiner` sebelum Track B-2.
 2. **Batas submission harian** dan **sisa kuota GPU Kaggle** (T4; multi-scale OOF memakai ~114 menit dua kernel; ensemble 50 gambar 29 menit).
 3. **Posisi LB terkini** dan apakah papan sudah direfresh organizer (kelompok invalid masih ada?).
 4. Aturan resmi tentang pseudo-label/test-time training dan batas penggunaan model pre-trained eksternal.
@@ -154,6 +159,6 @@ Perintah uji: `python -m pytest tests`.
 
 ## 10. Ekspektasi yang jujur
 
-- Top 3 di LB valid (≥0.41): peluang rendah (perkiraan ≈10–15% [inferensi]); butuh menumpuk beberapa gain +0.005–0.015 yang masing-masing tidak terbukti pada ensemble.
+- Top 3 di LB valid (≥0.40-0.41): peluang sangat rendah (perkiraan satu digit persen [inferensi]; revisi dari 10-15%). Butuh +0.03-0.04, sedangkan gain yang masuk akal berjumlah ~+0.01-0.02 dan belum terbukti pada ensemble; bagian gap yang tak terjelaskan mungkin pergeseran distribusi yang tidak bisa diperbaiki lewat training.
 - Skor 0.385–0.395 realistis jika A2+A3 berhasil, menaikkan peringkat valid dari ~96 ke sekitar 30–40 [inferensi].
 - Nilai tambah terbesar per jam kerja ada di Track B dan di A1 (menjelaskan gap), karena keduanya bukan sekadar menyetel ke LB dan menarik di penilaian kualitatif.
