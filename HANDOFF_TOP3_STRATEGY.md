@@ -156,10 +156,10 @@ Definisi dari notebook self-evaluation organizer (matriks IoU/Dice berpasangan G
 
 | | OOF 657 | hold-out 50 |
 |---|---|---|
-| PQ (near-limb + scorer) | 0.4088 | 0.4423 (report §4: 0.4427, selisih 0.0004 tak ditelusuri) |
-| Mean Dice per gambar | 0.624 | 0.663 |
+| PQ (near-limb + scorer, tau 0.1972) | 0.4089 | 0.4427 |
+| Mean Dice per gambar | 0.624 | 0.664 |
 | Mean Dice tanpa scorer | 0.6326 | 0.6758 |
-| Selisih Dice karena scorer | -0.0084 (CI95 -0.014..-0.0035) | -0.0126 (CI95 -0.021..-0.005) |
+| Selisih Dice karena scorer | -0.0084 (CI95 -0.014..-0.0035) | -0.0123 (CI95 -0.021..-0.005) |
 | GT tanpa prediksi (1:0) | 26.8% | 24.4% |
 | Prediksi tanpa GT (0:1) | 12.3% | 10.0% |
 | Prediksi menyentuh >= 2 GT | 2.4% | 1.9% |
@@ -168,7 +168,16 @@ Definisi dari notebook self-evaluation organizer (matriks IoU/Dice berpasangan G
 - **Temuan**: scorer menaikkan PQ (+0.0144) tetapi menurunkan Dice (-0.0084) karena membuang 16% instance. Sapuan ambang di OOF (PQ / Dice): 0.10: 0.4022 / 0.6320; 0.15: 0.4063 / 0.6313; **0.197: 0.4088 / 0.6241**; 0.25: 0.4069 / 0.6123. Dice jatuh di antara ambang 0.15 dan 0.25.
 - Bobot Dice vs PQ dalam rubrik tidak dipublikasikan, sehingga ambang yang cocok untuk evaluasi final tidak bisa diturunkan; 0.197 adalah optimum PQ. Dengan bobot sama, ambang ~0.15 lebih baik sekitar +0.005 pada jumlah PQ+Dice (seleksi satu parameter pada OOF yang sama; tanpa konfirmasi held-out).
 - Over-merging jarang (2.4%) dan fragmentasi kecil (3.4%); yang dominan adalah miss.
-- Dua final submission diperbolehkan, tetapi host menyarankan menggabungkannya menjadi satu strategi (forum 747960; keduanya harus reproducible). Pilihan kandidat: ambang 0.197 (PQ) vs 0.15 (seimbang).
+- Dua final submission diperbolehkan, tetapi host menyarankan menggabungkannya menjadi satu strategi (forum 747960; keduanya harus reproducible).
+- **Dua varian disiapkan** (`fs.InstanceScorer.load(tau=...)`; `py analysis/scripts/make_scorer_submission.py <dir> [tau]`; belum disubmit):
+
+| | OOF 657 PQ / Dice | hold-out 50 PQ / Dice | instance test dikirim |
+|---|---|---|---|
+| **rilis** tau 0.1972 | 0.4089 / 0.6241 | 0.4427 / 0.6635 | 1.083 / 1.267 |
+| **seimbang** tau 0.15 | 0.4063 / 0.6313 | 0.4418 / 0.6681 | 1.143 / 1.267 |
+| selisih (seimbang - rilis), berpasangan | PQ -0.0027 (CI -0.0046..-0.0007); Dice +0.0072 (CI +0.004..+0.011) | PQ -0.0009 (CI -0.009..+0.006); Dice +0.0046 (CI +0.001..+0.008) | |
+
+Ambang 0.15 dipilih pada OOF yang sama (satu parameter, tanpa konfirmasi independen).
 
 ## 8. Hal yang HARUS dicek dulu (tidak diketahui)
 

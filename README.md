@@ -53,6 +53,12 @@ The files, with the same SHA256 checksums that were on the dataset (`SHA256SUMS.
 exact `training/` scripts and data split that produced them, are kept privately by the author and will
 be re-published as a Kaggle dataset before the deadline, with this README updated to link it.
 
+## Scorer threshold configurations
+The instance scorer drops instances predicted below `tau`. `InstanceScorer.load()` uses the stored value (0.1972, the
+out-of-fold PQ / 2, the PQ-optimal choice); `InstanceScorer.load(tau=0.15)` keeps more instances: out-of-fold PQ
+-0.0027 and per-image Dice +0.0072 (hold-out -0.0009 and +0.0046). The test-set files are written by
+`python analysis/scripts/make_scorer_submission.py <output_dir> [tau]`. See section 4 of the report.
+
 ## Reproduce the submission
 **On Kaggle (recommended, once the weights dataset is re-published).** Create a notebook from
 `pipeline.ipynb`, attach (1) the weights dataset and (2) the competition data, enable a GPU (T4) and

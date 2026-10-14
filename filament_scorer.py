@@ -121,11 +121,14 @@ class InstanceScorer:
         self.booster, self.features, self.tau = booster, features, tau
 
     @classmethod
-    def load(cls, model_dir: str = MODEL_DIR) -> "InstanceScorer":
+    def load(cls, model_dir: str = MODEL_DIR, tau: float | None = None) -> "InstanceScorer":
+        """The stored model. `tau` overrides the stored threshold (0.1972, the out-of-fold PQ / 2): a lower
+        value keeps more instances (0.15: out-of-fold PQ -0.0025, per-image Dice +0.0072; report section 4)."""
         import lightgbm as lgb
         with open(os.path.join(model_dir, "instance_scorer.json")) as f:
             meta = json.load(f)
-        return cls(lgb.Booster(model_file=os.path.join(model_dir, "instance_scorer.txt")), meta["features"], meta["tau"])
+        return cls(lgb.Booster(model_file=os.path.join(model_dir, "instance_scorer.txt")), meta["features"],
+                   meta["tau"] if tau is None else float(tau))
 
     def scores(self, instances: list[dict]) -> np.ndarray:
         if not instances:

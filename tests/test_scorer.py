@@ -74,3 +74,13 @@ def test_refiner_probability_shape_and_bounds():
     p, (x0, y0, x1, y1) = fp.refiner_prob(gray, [800, 700, 120, 40], net, torch.device("cpu"))
     assert p.shape == (fp.REFINE_CROP, fp.REFINE_CROP) and 0 <= p.min() and p.max() <= 1
     assert 0 <= x0 < x1 <= 2048 and 0 <= y0 < y1 <= 2048
+
+
+def test_tau_override_changes_only_the_threshold_and_keeps_more_instances():
+    gray, lab, prob = scene()
+    base, low = fs.InstanceScorer.load(), fs.InstanceScorer.load(tau=0.05)
+    assert low.tau == 0.05 and base.tau == json.load(open(os.path.join(fs.MODEL_DIR, "instance_scorer.json")))["tau"]
+    assert low.features == base.features
+    kept_base = set(np.unique(base.filter(gray, lab, lab, prob))) - {0}
+    kept_low = set(np.unique(low.filter(gray, lab, lab, prob))) - {0}
+    assert kept_base <= kept_low

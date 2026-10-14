@@ -18,12 +18,12 @@ import lightgbm as lgb
 import numpy as np
 
 sys.path.insert(0, 'analysis/scripts')
-from scorer_common import PQ, cv_predict, feature_names, table   # noqa: E402
+from scorer_common import PQ, cv_predict, feature_names, paired_ci, table   # noqa: E402
 
 sys.stdout.reconfigure(encoding='utf-8')
 rng = np.random.default_rng(0)
-THR = 0.197
-raw = json.load(open('analysis/results/rubric/rubric_raw.json'))
+THR = json.load(open('models/instance_scorer.json'))['tau']        # 0.1972, the released threshold
+raw =json.load(open('analysis/results/rubric/rubric_raw.json'))
 assert raw['status'] == 'done' and len(raw['results']) == 707, (raw['status'], len(raw['results']))
 R = {r['name']: r for r in raw['results']}
 oi = json.load(open('analysis/results/oof_instances/oof_instances.json'))['results']
@@ -80,7 +80,7 @@ def per_pass(name, sel, p):
 
 
 def evaluate(names, use_scorer):
-    ann, per_img = [], []
+    ann, per_img, pq_img = [], [], []
     ious, dices, gdeg, pdeg, pq = [], [], [], [], np.zeros(4)
     for nm in names:
         rr = R[nm]
@@ -89,10 +89,11 @@ def evaluate(names, use_scorer):
         rows = [per_pass(nm, sel, p) for p in rr['passes']]
         ann += [(x['dice_fg'], x['dice_bg'], x['acc']) for x in rows]
         per_img.append(np.mean([(x['dice_fg'], x['dice_bg'], x['acc']) for x in rows], axis=0))
+        pq_img.append(np.sum([x['pq'] for x in rows], axis=0))
         for x in rows:
             ious.append(x['iou']); dices.append(x['dice']); gdeg.append(x['gt_deg']); pdeg.append(x['pr_deg']); pq += x['pq']
     return dict(ann=np.array(ann), img=np.array(per_img), iou=np.concatenate(ious), dice=np.concatenate(dices),
-                gt_deg=np.concatenate(gdeg), pr_deg=np.concatenate(pdeg), pq=pq)
+                gt_deg=np.concatenate(gdeg), pr_deg=np.concatenate(pdeg), pq=pq, pq_img=np.array(pq_img))
 
 
 def boot_mean(x, n=3000):
@@ -158,4 +159,30 @@ for thr in (0.0, 0.05, 0.10, 0.15, 0.197, 0.25, 0.30):
     sweep[str(thr)] = {'pq': round(PQ(E['pq']), 4), 'dice_img': round(float(E['img'][:, 0].mean()), 4), 'kept_share': round(float(kept), 3)}
     print(f"  thr {thr:5.3f}: PQ {PQ(E['pq']):.4f}  Dice(per image) {E['img'][:, 0].mean():.4f}  kept {kept:.2f}")
 out['threshold_sweep_oof'] = sweep
+
+# the two candidate configurations, paired: released tau (PQ) against tau 0.15 (balanced)
+print(f'\n=== candidate thresholds, paired over images (released tau {THR}; "balanced" 0.15)')
+variants = {}
+for grp, ns in (('out-of-fold 657', [r['name'] for r in oof]), ('hold-out 50', [r['name'] for r in hold])):
+    res = {}
+    for tau in (THR, 0.15):
+        saved = {k: v.copy() for k, v in keep.items()}
+        for nm in ns:
+            keep[nm] = score[nm] >= tau
+        res[tau] = evaluate(ns, True)
+        res[tau]['kept'] = float(np.mean(np.concatenate([score[nm] >= tau for nm in ns])))
+        keep.update(saved)
+    a, b = res[0.15], res[THR]
+    dpq = a['pq_img'][:, 0:4]
+    d_pq, ci_pq = paired_ci(a['pq_img'], b['pq_img'], rng)
+    d_dice = a['img'][:, 0] - b['img'][:, 0]
+    lo, hi = boot_mean(d_dice)
+    print(f"  {grp}: tau {THR}: PQ {PQ(b['pq']):.4f} TP/FP/FN {b['pq'][1]:.0f}/{b['pq'][2]:.0f}/{b['pq'][3]:.0f} Dice {b['img'][:, 0].mean():.4f} kept {b['kept']:.2f}")
+    print(f"  {'':{len(grp)}}  tau 0.15: PQ {PQ(a['pq']):.4f} TP/FP/FN {a['pq'][1]:.0f}/{a['pq'][2]:.0f}/{a['pq'][3]:.0f} Dice {a['img'][:, 0].mean():.4f} kept {a['kept']:.2f}")
+    print(f"  {'':{len(grp)}}  0.15 minus {THR}: PQ {d_pq:+.4f} CI95 [{ci_pq[0]:+.4f}, {ci_pq[1]:+.4f}] | Dice {d_dice.mean():+.4f} CI95 [{lo:+.4f}, {hi:+.4f}]")
+    variants[grp] = {str(t): {'pq': round(PQ(r['pq']), 4), 'tp_fp_fn': [int(x) for x in r['pq'][1:]], 'dice_per_image': round(float(r['img'][:, 0].mean()), 4),
+                              'kept_share': round(r['kept'], 3)} for t, r in res.items()}
+    variants[grp]['diff_0.15_minus_released'] = {'pq': round(float(d_pq), 4), 'pq_ci95': [round(float(ci_pq[0]), 4), round(float(ci_pq[1]), 4)],
+                                                  'dice': round(float(d_dice.mean()), 4), 'dice_ci95': [round(float(lo), 4), round(float(hi), 4)]}
+out['candidate_thresholds'] = variants
 json.dump(out, open('analysis/results/rubric_summary.json', 'w'), indent=1)
