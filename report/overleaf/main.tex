@@ -71,8 +71,8 @@ Figure~\ref{fig:pipeline} summarises the pipeline.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.93\textwidth]{fig_examples.png}
-\caption{The first three hold-out images (not selected; each has one annotator pass), predictions of the refiner stage (before the near-limb filter and the scorer). Top: annotated filaments, matched by a prediction (green) or missed (yellow). Bottom: predictions, matched (cyan) or unmatched (red). PQ is the official per-image value.}
+\includegraphics[width=0.93\textwidth]{fig_cases.png}
+\caption{Four hold-out images chosen by a rule fixed beforehand: (a) the image the scorer helps most, (b) hurts most, (c) the lowest PQ among images with $\ge$4 annotated filaments (the next one after (b)), (d) the median PQ. The annotator pass with most instances is shown. Top: annotated filaments, matched by a kept prediction (green) or missed (yellow). Bottom: kept predictions, matched (cyan) or unmatched (red); candidates dropped by the instance scorer (orange) or by the near-limb filter (magenta). Titles: per-image PQ without $\to$ with the scorer.}
 \label{fig:examples}
 \end{figure*}
 
@@ -171,7 +171,7 @@ Re-tuned thresholds for single-pass images & $+0.0003$\\
 \end{table}
 
 \subsection{Error analysis and uncertainty}
-Figure~\ref{fig:examples} shows typical behaviour: long filaments are recovered well, misses are mostly short or faint filaments, and many unmatched predictions are short dark structures, some of which may be real but unannotated (the challenge forum reports missing annotations). Of the 450 hold-out errors of the refiner-stage pipeline, 54\% are near-misses (a prediction overlaps a filament with $\text{IoU}\le0.5$). Treating one annotator pass as a prediction of another with the same rules gives only PQ~0.34 (mean matched IoU 0.63; 0.14\% of matched pairs reach IoU 0.85), so the ceiling set by the labels is low (Fig.~\ref{fig:unc}); an oracle that removes exactly the instances below break-even would add $+0.074$, of which the scorer captures $+0.014$.
+Figure~\ref{fig:examples} shows the filters at work. In (a) the scorer removes two small candidates and the three kept predictions match three of five annotated filaments (PQ 0.44$\to$0.55). In (b) it removes two candidates, one of which matched an annotated filament, and keeps one that matches nothing (PQ 0.15$\to$0.00): its expected-IoU estimate fails on faint structures. In (c) the near-limb filter removes three candidates close to the limb, where annotated filaments also lie, and only 2 of 11 annotated filaments are matched. Many unmatched predictions are short dark structures, some of which may be real but unannotated (the challenge forum reports missing annotations). Of the 450 hold-out errors of the refiner-stage pipeline, 54\% are near-misses (a prediction overlaps a filament with $\text{IoU}\le0.5$). Treating one annotator pass as a prediction of another with the same rules gives only PQ~0.34 (mean matched IoU 0.63; 0.14\% of matched pairs reach IoU 0.85), so the ceiling set by the labels is low (Fig.~\ref{fig:unc}); an oracle that removes exactly the instances below break-even would add $+0.074$, of which the scorer captures $+0.014$.
 
 The out-of-fold estimate of this recipe (about 0.41 for an ensemble) is above the leaderboard (0.37). Using only stored predictions we could not attribute the gap to the test images: a classifier separating test from out-of-fold instances on 26 geometry and image features reaches AUC 0.51, inside the range of 20 label permutations (0.44--0.56), and re-weighting the out-of-fold images to the test mixture moves PQ from 0.409 to 0.414, away from the leaderboard. What remains are properties invisible to the predictions (annotator style or number of passes in the test labels) and the noise of a score computed on part of 180 images.
 

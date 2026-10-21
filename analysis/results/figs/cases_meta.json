@@ -1,0 +1,46 @@
+{
+ "20160726135354Bh.jpeg": {
+  "n_gt": 5,
+  "n_gt_hit": 3,
+  "n_kept": 3,
+  "n_scorer_dropped": 2,
+  "n_limb_dropped": 1,
+  "label": "A scorer helps most",
+  "pq_no_scorer": 0.4377,
+  "pq": 0.5471,
+  "n_pass": 1
+ },
+ "20210814044930Lh.jpeg": {
+  "n_gt": 4,
+  "n_gt_hit": 0,
+  "n_kept": 1,
+  "n_scorer_dropped": 2,
+  "n_limb_dropped": 0,
+  "label": "B scorer hurts most",
+  "pq_no_scorer": 0.1546,
+  "pq": 0.0,
+  "n_pass": 1
+ },
+ "20160927133734Ch.jpeg": {
+  "n_gt": 11,
+  "n_gt_hit": 2,
+  "n_kept": 8,
+  "n_scorer_dropped": 0,
+  "n_limb_dropped": 3,
+  "label": "C lowest PQ, >=4 GT",
+  "pq_no_scorer": 0.1354,
+  "pq": 0.1354,
+  "n_pass": 1
+ },
+ "20120913165314Mh.jpeg": {
+  "n_gt": 4,
+  "n_gt_hit": 3,
+  "n_kept": 4,
+  "n_scorer_dropped": 0,
+  "n_limb_dropped": 0,
+  "label": "D median PQ",
+  "pq_no_scorer": 0.4263,
+  "pq": 0.4263,
+  "n_pass": 3
+ }
+}
