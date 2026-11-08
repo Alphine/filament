@@ -67,7 +67,7 @@ Figure~\ref{fig:pipeline} summarises the pipeline.
 
 \paragraph{Near-limb filter.} The disk is estimated per image (Otsu threshold, largest component); instances whose centroid lies beyond $0.88R$ are dropped. The threshold was chosen out of fold (+0.0065 PQ).
 
-\paragraph{Instance scorer.}\label{sec:scorer} Under PQ, keeping an instance adds its matched IoU to the numerator and $0.5$ to the denominator in every pass, so it pays only if its expected matched IoU exceeds PQ$/2$. A LightGBM \cite{ke2017lightgbm} regressor on 36 inference-time features (stage-A probability statistics, shape, contrast, disk position, neighbourhood), fitted on the 4,694 out-of-fold instances, predicts that quantity; instances below $\tau{=}0.1972$ (the out-of-fold PQ$/2$, fixed in advance, not tuned) are dropped. Cross-validated by image the scorer reaches AUC 0.784 and removes 14.5\% of the instances on the test set.
+\paragraph{Instance scorer.}\label{sec:scorer} Under PQ, keeping an instance adds its matched IoU to the numerator and $0.5$ to the denominator in every pass, so it pays only if its expected matched IoU exceeds PQ$/2$. A LightGBM \cite{ke2017lightgbm} regressor on 36 inference-time features (stage-A probability statistics, shape, contrast, disk position, neighbourhood), fitted on the 4,694 out-of-fold instances, predicts that quantity; instances below $\tau{=}0.1972$ are dropped. This is half of the near-limb out-of-fold PQ ($0.3944/2$), fixed in advance from the pre-scorer PQ and not tuned. Cross-validated by image the scorer reaches AUC 0.784 and removes 14.5\% of the instances on the test set.
 
 \begin{figure*}[t]
 \centering
@@ -96,14 +96,14 @@ Configuration & Hold-out PQ & OOF PQ & LB\\
 5-fold ensemble, no TTA$^\dagger$ & 0.3754 & -- & 0.33\\
 \quad + flip TTA & 0.4151 & 0.367 & --\\
 \quad + crop refiner & 0.4325 & 0.388 & 0.36\\
-\quad + near-limb filter & 0.4384 & 0.394 & --\\
+\quad + near-limb filter & 0.4383 & 0.394 & --\\
 \quad + instance scorer (final) & \textbf{0.4427} & \textbf{0.409} & \textbf{0.37}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Results}
-The final pipeline reaches PQ 0.4427 on the hold-out, 0.409 out of fold and 0.37 on the public leaderboard (rank 167 of 806 on 1 October; the scoreboard shows about half of the test images). The refiner adds $+0.0177$ on the hold-out and $+0.02$ on the leaderboard; the scorer adds $+0.0144$ out of fold (CI95 $+0.011$ to $+0.018$), $+0.0043$ on the hold-out (not significant on 50 images) and $+0.01$ on the leaderboard. Table~\ref{tab:rubric} gives the quantities of the rubric other than PQ: over-merging is rare (2\% of predictions touch two or more annotated filaments) and splitting is small (3\% of annotated filaments); the dominant relation is a miss.
+The final pipeline reaches PQ 0.4427 on the hold-out, 0.409 out of fold and 0.37 on the public leaderboard (rank 167 of 806 on 1 October; the scoreboard shows about half of the test images). The refiner adds $+0.0177$ on the hold-out (its leaderboard gain is not measured separately); the scorer adds $+0.0144$ out of fold (CI95 $+0.011$ to $+0.018$), $+0.0043$ on the hold-out (not significant on 50 images) and $+0.01$ on the leaderboard. Table~\ref{tab:rubric} gives the quantities of the rubric other than PQ: over-merging is rare (2\% of predictions touch two or more annotated filaments) and splitting is small (3\% of annotated filaments); the dominant relation is a miss.
 
 \begin{table}[t]
 \centering
@@ -159,7 +159,7 @@ Idea & $\Delta$PQ\\
 \midrule
 Per-epoch re-sampling of stage-A patches (5 folds) & $-0.0202$\\
 Multi-scale TTA, 5-model ensemble (hold-out) & $-0.0114$\\
-EMA weights, ensemble (hold-out) & $-0.0100$\\
+EMA weights, ensemble (hold-out) & $-0.0101$\\
 Consensus ($\ge$2-pass) target, 5 folds & $+0.0023$\\
 Hard-negative training of the refiner & $+0.0006$\\
 Ensemble with a public Mask R-CNN & $+0.0028$\\
