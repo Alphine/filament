@@ -1,0 +1,53 @@
+{
+ "tau": 0.2239,
+ "variants": {
+  "loose": {
+   "pq": 0.4139,
+   "tp_fp_fn": [
+    5881,
+    5226,
+    2318
+   ]
+  },
+  "strict": {
+   "pq": 0.4484,
+   "tp_fp_fn": [
+    5321,
+    2715,
+    2878
+   ]
+  },
+  "strict+nl": {
+   "pq": 0.4479,
+   "tp_fp_fn": [
+    5235,
+    2548,
+    2964
+   ]
+  },
+  "scorer": {
+   "pq": 0.4552,
+   "tp_fp_fn": [
+    5185,
+    2202,
+    3014
+   ]
+  }
+ },
+ "scorer - strict": {
+  "diff": 0.0068,
+  "ci95": [
+   0.0035,
+   0.0104
+  ]
+ },
+ "scorer - ours": {
+  "diff": 0.0457,
+  "ci95": [
+   0.0388,
+   0.0526
+  ]
+ },
+ "best": "scorer",
+ "verdict": "PROBE-WORTHY: candidate on public weights beats the released pipeline out of fold"
+}
