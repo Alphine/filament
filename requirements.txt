@@ -1,5 +1,5 @@
 # Versions taken from the Kaggle Python image used for every reported run
-# (Python 3.12.13; run `filament-env-versions` output kept in results/env_versions.json).
+# (Python 3.12.13; run `filament-env-versions` output kept in analysis/results/env_versions.json).
 numpy==2.0.2
 pandas==2.3.3
 opencv-python-headless==4.13.0.92
@@ -13,3 +13,4 @@ scikit-learn==1.6.1
 lightgbm==4.6.0          # Kaggle image version; models/instance_scorer.txt was fitted with 4.7.0 and scores identically on 4.6.0 (tests/)
 tqdm==4.67.3
 nbformat==5.10.4
+pytest==8.3.4          # tests/ only

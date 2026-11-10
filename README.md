@@ -5,7 +5,7 @@ Instance segmentation of solar filaments in H-alpha images (MAGFiLO) for the IEE
 
 | | |
 |---|---|
-| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4427** full pipeline; 0.4384 without the instance scorer; 0.4325 also without the near-limb filter (bootstrap SE 0.017) |
+| **Hold-out PQ** (50 images, never used for training or model selection) | **0.4427** full pipeline; 0.4383 without the instance scorer; 0.4325 also without the near-limb filter (bootstrap SE 0.017) |
 | Out-of-fold PQ (657 images, one fold model per image) | 0.409 full pipeline (scorer cross-validated by image); 0.394 without the scorer; 0.388 also without the near-limb filter (SE 0.005) |
 | **Public leaderboard PQ** | **0.37** (0.36 without the instance scorer) |
 | Annotator-vs-annotator PQ on the training data (same rule) | 0.34 |
@@ -72,7 +72,7 @@ data, then set `FILAMENT_WEIGHTS` (folder with `unet_fold1..5.pt`, `refiner_best
 the notebook from this folder.
 
 `MAX_TEST_IMAGES` limits the run for a smoke test; `EVAL_HOLDOUT_IMAGES = 50` scores the hold-out
-with the official PQ (expected 0.4427; 0.4384 with `scorer=None`; 0.4325 with `scorer=None,
+with the official PQ (expected 0.4427; 0.4383 with `scorer=None`; 0.4325 with `scorer=None,
 limb_drop=None`; up to CPU/GPU floating-point noise, about +-0.002).
 Checksums of every weight file are in `SHA256SUMS.txt` below.
 
