@@ -28,6 +28,7 @@ import filament_scorer as feats
 
 INPUT, OUT = "/kaggle/input", "/kaggle/working"
 T0 = time.time()
+BUDGET_S = 40 * 60          # the whole job takes about 10 minutes; anything far beyond that is a fault -> stop
 H = W = 2048
 T_LO = 0.35
 LOOSE = dict(t_hi=0.5, min_area=100, min_meanp=0.5)
@@ -114,6 +115,15 @@ for tag in ("oof", "holdout"):
 folds = sorted(f for t, f in found if t == "oof")
 assert folds and folds == sorted(f for t, f in found if t == "holdout"), found
 print("folds found:", folds, flush=True)
+# FAIL FAST before any heavy work: every map file opens, has the expected images and format
+for (tag, f), p in sorted(found.items()):
+    z = np.load(p)
+    assert len(z.files) == (50 if tag == "holdout" else len(z.files)) and len(z.files) >= 50, (p, len(z.files))
+    m = z[z.files[0]]
+    assert m.shape == (H, W) and m.dtype == np.uint8 and m.max() > 128, (p, m.shape, m.dtype, int(m.max()))
+if os.environ.get("REQUIRE_ALL") == "1":
+    assert folds == [1, 2, 3, 4, 5], folds
+print("fail-fast OK:", len(found), "map files", flush=True)
 
 results, seen = [], set()
 for f in folds:
@@ -124,6 +134,8 @@ for f in folds:
         seen.add(name)
         results.append(record(name, "oof", f, z[stem]))
     print(f"fold {f}: {len(z.files)} images, total {len(results)}, {time.time() - T0:.0f}s", flush=True)
+    json.dump({"status": "running", "folds": folds[:folds.index(f) + 1], "results": results}, open(f"{OUT}/effv2s_instances.json", "w"))
+    assert time.time() - T0 < BUDGET_S, "time budget exceeded: stopping (partial file kept)"
 if folds == [1, 2, 3, 4, 5]:
     assert len(seen) == 657 and seen == set(names) - set(holdout), len(seen)
 
