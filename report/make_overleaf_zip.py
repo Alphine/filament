@@ -8,7 +8,7 @@ import os
 import zipfile
 
 SRC = 'report/overleaf'
-FILES = ['main.tex', 'preamble.tex', 'main.bib', 'fig_uncertainty.pdf', 'fig_examples.png']
+FILES = ['main.tex', 'preamble.tex', 'main.bib', 'fig_cases.png', 'fig_uncertainty.pdf']
 out = os.path.join(SRC, 'overleaf_project.zip')
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
     for f in FILES:
