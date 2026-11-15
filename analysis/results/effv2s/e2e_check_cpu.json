@@ -1,0 +1,46 @@
+{
+ "device": "cpu",
+ "total": {
+  "rows_submitted": 20,
+  "rows_new": 20,
+  "identical_rows": 15
+ },
+ "images": [
+  {
+   "stem": "20110120105534Ch",
+   "rows_submitted": 2,
+   "rows_new": 2,
+   "identical_rows": 1,
+   "min_best_iou": 0.9986,
+   "mean_best_iou": 0.9993,
+   "seconds": 164
+  },
+  {
+   "stem": "20121220110614Th",
+   "rows_submitted": 5,
+   "rows_new": 5,
+   "identical_rows": 3,
+   "min_best_iou": 0.9995,
+   "mean_best_iou": 0.9998,
+   "seconds": 152
+  },
+  {
+   "stem": "20141220201934Ch",
+   "rows_submitted": 11,
+   "rows_new": 11,
+   "identical_rows": 9,
+   "min_best_iou": 0.9996,
+   "mean_best_iou": 0.9999,
+   "seconds": 133
+  },
+  {
+   "stem": "20170329014850Uh",
+   "rows_submitted": 2,
+   "rows_new": 2,
+   "identical_rows": 2,
+   "min_best_iou": 1.0,
+   "mean_best_iou": 1.0,
+   "seconds": 139
+  }
+ ]
+}

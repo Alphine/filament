@@ -10,9 +10,9 @@ Scales  : optionally the probability maps of several image scales are averaged (
 Scorer  : optionally, a learned instance scorer (filament_scorer.py) drops the instances
           whose predicted matched IoU is below the PQ break-even.
 
-Everything here is inference-only. Weights (`unet_fold1..5.pt`, `refiner_best.pt`) are
-republished as a Kaggle dataset shortly before the submission deadline; see the
-repository README for the current status and SHA256 checksums.
+Everything here is inference-only. Weights (`unet_fold1..5.pt`, `refiner_best.pt`): see the
+repository README for the Kaggle dataset and SHA256 checksums. This is the earlier pipeline
+(public leaderboard 0.37); the final submission (0.38) is filament_effv2s.py.
 """
 
 from __future__ import annotations
