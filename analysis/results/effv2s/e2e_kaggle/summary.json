@@ -1,0 +1,43 @@
+{
+ "commit": "1cd216e08ab4ad02009cc19ef37e137ca65444ed",
+ "versions": {
+  "torch": "2.11.0+cpu",
+  "numpy": "2.1.3",
+  "python": "3.13.18"
+ },
+ "device": "cpu",
+ "pytest": "25 passed, 15 warnings in 25.57s",
+ "notebook": {
+  "images": [
+   "20110120105534Ch",
+   "20110130110334Ch"
+  ],
+  "rows": 3,
+  "compared_with_direct": [
+   "20110120105534Ch"
+  ],
+  "equal_to_direct": true
+ },
+ "images": 180,
+ "rows_submitted": 1048,
+ "rows_rerun": 1047,
+ "identical_rle_rows": 765,
+ "matched_iou_gt_0.5": 1045,
+ "submitted_without_match": 3,
+ "rerun_without_match": 2,
+ "matched_iou_mean": 0.9998,
+ "matched_iou_min": 0.9683,
+ "matched_iou_ge_0.99": 1044,
+ "images_same_instance_set": 175,
+ "images_same_row_count": 175,
+ "images_same_rows_and_order": 44,
+ "pq_like_agreement": 0.9974,
+ "seconds_per_image_mean": 387.0,
+ "kernel_seconds": [
+  19615,
+  17370,
+  16121,
+  17569
+ ],
+ "rerun_csv_sha256": "f6f97abe7a0d4e56c7d36faf958ec803a41a040bfe9cd482027a173d6e5ab5c8"
+}

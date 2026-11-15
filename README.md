@@ -105,8 +105,19 @@ refit the scorer in memory. `filament_effv2s.py` is the same procedure as one co
   2.5 minutes per image; `analysis/results/effv2s/e2e_check_cpu.json`): the same 20 instances as in the submitted file
   (2, 5, 11 and 2 per image), 15 of the 20 rows identical as RLE strings, and every submitted mask matched by a new one
   with IoU >= 0.9986 (mean 0.9998). The five rows that differ do so by a few boundary pixels, because the submitted
-  maps were computed on a GPU in float16. The full 180-image run from the weights has not been repeated, and the
-  notebook itself has not been run on Kaggle since this code path was added.
+  maps were computed on a GPU in float16.
+* *All 180 test images, on Kaggle.* Four CPU kernels (`analysis/scripts/filament_effv2s_e2e_cpu.py`, 15 November;
+  torch 2.11, about 6.5 minutes per image, 4.5 to 5.5 hours per kernel) cloned this repository at commit `1cd216e`,
+  verified the checksums of the weights and of the submitted file, and ran `filament_effv2s.Pipeline` on 45 images
+  each (`analysis/results/effv2s/e2e_kaggle/`, aggregated by `analysis/scripts/aggregate_effv2s_e2e.py`). The re-run
+  has 1,047 rows against the submitted 1,048: 1,045 submitted instances have a re-run instance with IoU > 0.5 (mean
+  IoU 0.9998, minimum 0.9683, 1,044 of them >= 0.99), 3 submitted instances have none and 2 re-run instances are new,
+  all in 5 images (instances at the rule's or the scorer's threshold); 175 of 180 images have the same instance set.
+  765 rows are identical as RLE strings, so the re-run file is not byte-identical to the submitted one (sha256
+  `f6f97abe...5ab5c8`); the two agree at 0.9974 in the metric's own terms (PQ of one file against the other). We did
+  not submit the re-run file, so its leaderboard score is not known. On the same Kaggle image the `tests/` suite passed
+  (25 tests), and the code cells of `pipeline.ipynb`, executed with `MAX_TEST_IMAGES = 2`, wrote the same rows as the
+  direct code path for the one image the two runs share. The notebook has not been run on all 180 images, nor on a GPU.
 
 **Earlier pipeline.** Cost: about 3 minutes per image on the 4-core Kaggle CPU (stage-A with 5 models x 4 flips
 dominates). `pipeline.ipynb` was run on Kaggle (CPU) from the weights: on the first 3 hold-out images it reproduced
